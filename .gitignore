@@ -4,3 +4,4 @@ __pycache__/
 .env
 instance/
 snapbook.db
+snapbook_backup.db

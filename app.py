@@ -28,8 +28,14 @@ login_manager.init_app(app)
 login_manager.login_view = "login"
 login_manager.login_message = "Please log in to access that page."
 
-DB = Path(__file__).with_name("snapbook.db")
+volume_path = os.environ.get("RAILWAY_VOLUME_MOUNT_PATH")
 
+if volume_path:
+    DB = Path(volume_path) / "snapbook.db"
+else:
+    DB = Path(__file__).with_name("snapbook.db")
+
+DB.parent.mkdir(parents=True, exist_ok=True)
 DEFAULT_IMAGE = (
     "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=900"
 )
