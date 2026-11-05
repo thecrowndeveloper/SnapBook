@@ -1,0 +1,95 @@
+
+{% extends "base.html" %}
+{% block title %}Create an account | SnapBook{% endblock %}
+
+{% block content %}
+<section class="section auth-section">
+    <div class="auth-card">
+        <p class="eyebrow">JOIN SNAPBOOK</p>
+        <h1>Create your account</h1>
+        <p class="muted">Join as a client or create your photographer profile.</p>
+
+        <form method="POST" class="booking-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <label>Account type
+                <select name="role" id="account-role">
+                    <option value="client" {% if role == 'client' %}selected{% endif %}>
+                        Client
+                    </option>
+                    <option value="photographer" {% if role == 'photographer' %}selected{% endif %}>
+                        Photographer
+                    </option>
+                </select>
+            </label>
+
+            <label>Full name
+                <input name="name" required placeholder="Your full name">
+            </label>
+
+            <label>Email address
+                <input type="email" name="email" required
+                       placeholder="you@example.com">
+            </label>
+
+            <label>Password
+                <input type="password" name="password" required minlength="8"
+                       placeholder="At least 8 characters">
+            </label>
+
+            <div id="photographer-fields" {% if role != 'photographer' %}hidden{% endif %}>
+                <div class="auth-divider"></div>
+                <p class="eyebrow">PHOTOGRAPHER PROFILE</p>
+
+                <label>City
+                    <input name="city" placeholder="e.g. Abuja">
+                </label>
+
+                <label>Photography specialty
+                    <input name="specialty"
+                           placeholder="e.g. Portraits & Graduation">
+                </label>
+
+                <label>Short biography
+                    <textarea name="bio" rows="3"
+                              placeholder="Tell clients about your photography..."></textarea>
+                </label>
+
+                <label>Price per session (₦)
+                    <input type="number" name="price" min="1"
+                           placeholder="e.g. 35000">
+                </label>
+
+                <label>Maximum sessions per booking
+                    <input type="number" name="max_sessions" min="1"
+                           value="1">
+                </label>
+            </div>
+
+            <button class="btn dark full" type="submit">Create account</button>
+        </form>
+
+        <p class="auth-switch">
+            Already registered?
+            <a href="{{ url_for('login') }}">Log in</a>
+        </p>
+    </div>
+</section>
+
+<script>
+    const roleSelect = document.getElementById("account-role");
+    const photographerFields = document.getElementById("photographer-fields");
+
+    function updateRegistrationFields() {
+        const isPhotographer = roleSelect.value === "photographer";
+        photographerFields.hidden = !isPhotographer;
+
+        photographerFields.querySelectorAll("input, textarea").forEach(field => {
+            field.required = isPhotographer;
+        });
+    }
+
+    roleSelect.addEventListener("change", updateRegistrationFields);
+    updateRegistrationFields();
+</script>
+{% endblock %}

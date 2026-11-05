@@ -1,0 +1,59 @@
+
+{% extends "base.html" %}
+{% block title %}Photographer dashboard | SnapBook{% endblock %}
+
+{% block content %}
+<section class="section dashboard">
+    <p class="eyebrow">PHOTOGRAPHER WORKSPACE</p>
+    <h1>Your booking requests</h1>
+    <p class="muted">Welcome, {{ current_user.name }}. Manage requests for your photography profile.</p>
+
+    {% if bookings %}
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Client</th>
+                    <th>Date & time</th>
+                    <th>Sessions</th>
+                    <th>Estimate</th>
+                    <th>Status</th>
+                    <th>Update</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in bookings %}
+                <tr>
+                    <td>{{ b.client_name }}<small>{{ b.email }}</small></td>
+                    <td>{{ b.session_date }}<small>{{ b.session_time }}</small></td>
+                    <td>{{ b.sessions }}</td>
+                    <td>₦{{ "{:,.0f}".format(b.price * b.sessions) }}</td>
+                    <td>
+                        <span class="status {{ b.status|lower }}">{{ b.status }}</span>
+                    </td>
+                    <td>
+                        <form class="status-form" method="POST"
+                              action="{{ url_for('booking_status', booking_id=b.id) }}">
+                            <input type="hidden" name="csrf_token"
+                                   value="{{ csrf_token() }}">
+                            <select name="status">
+                                <option value="Pending" {% if b.status == 'Pending' %}selected{% endif %}>Pending</option>
+                                <option value="Confirmed" {% if b.status == 'Confirmed' %}selected{% endif %}>Confirmed</option>
+                                <option value="Cancelled" {% if b.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                            </select>
+                            <button class="mini-btn" type="submit">Save</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty">
+        You don't have any booking requests yet.
+        <p>Your requests will appear here when clients book your services.</p>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,47 @@
+
+{% extends "base.html" %}
+{% block title %}My bookings | SnapBook{% endblock %}
+
+{% block content %}
+<section class="section dashboard">
+    <p class="eyebrow">CLIENT WORKSPACE</p>
+    <h1>My bookings</h1>
+    <p class="muted">Welcome, {{ current_user.name }}. Track your photography requests here.</p>
+
+    {% if bookings %}
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Photographer</th>
+                    <th>Date & time</th>
+                    <th>Sessions</th>
+                    <th>Estimate</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in bookings %}
+                <tr>
+                    <td>{{ b.photographer }}</td>
+                    <td>{{ b.session_date }}<small>{{ b.session_time }}</small></td>
+                    <td>{{ b.sessions }}</td>
+                    <td>₦{{ "{:,.0f}".format(b.price * b.sessions) }}</td>
+                    <td>
+                        <span class="status {{ b.status|lower }}">
+                            {{ b.status }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty">
+        You haven't made any bookings yet.
+        <p><a href="{{ url_for('home') }}">Explore photographers</a></p>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

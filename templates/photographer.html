@@ -1,0 +1,29 @@
+{% extends "base.html" %}{% block title %}{{ person.name }}{% endblock %}
+{% block content %}
+<a class="back" href="{{ url_for('home') }}">← Back to photographers</a>
+<section class="profile">
+  <div class="profile-image"><img src="{{ person.image }}" alt="Portrait of {{ person.name }}"></div>
+  <div class="profile-info"><p class="eyebrow">{{ person.specialty }} · {{ person.city }}</p><h1>{{ person.name }}</h1><p class="sub">{{ person.bio }}</p>
+    <div class="stats"><div><strong>₦{{ "{:,.0f}".format(person.price) }}</strong><span>per session</span></div><div><strong>{{ person.max_sessions }}</strong><span>max sessions per request</span></div></div>
+    <p class="availability"><b>Usual working days:</b> {{ person.available_days }}</p>
+  </div>
+</section>
+<section class="booking-wrap">
+  <div><p class="eyebrow">LET'S MAKE SOMETHING</p><h2>Request a session</h2><p class="muted">Choose your preferred date and time. Your request is pending until the photographer confirms it.</p>
+    <div class="calendar-note">Available days are a guide. A time slot becomes unavailable when a request is submitted.</div>
+  </div>
+  <form class="booking-form" action="{{ url_for('book', photographer_id=person.id) }}" method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Your name<input required name="client_name" placeholder="Full name"></label>
+    <label>Email address<input required type="email" name="email" placeholder="you@example.com"></label>
+    <div class="two"><label>Preferred date<input required id="date" type="date" name="session_date"></label><label>Preferred time<select required name="session_time"><option value="">Select time</option>{% for t in ["09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00"] %}<option value="{{ t }}">{{ t }}</option>{% endfor %}</select></label></div>
+    <label>Number of sessions<select name="sessions" id="sessions">{% for n in range(1, person.max_sessions + 1) %}<option value="{{ n }}">{{ n }} session{% if n > 1 %}s{% endif %}</option>{% endfor %}</select></label>
+    <label>What do you have in mind? <span class="optional">(optional)</span><textarea name="notes" rows="3" placeholder="Graduation portraits, model portfolio, location ideas..."></textarea></label>
+    <div class="total">Estimated total <strong id="total">₦{{ "{:,.0f}".format(person.price) }}</strong></div>
+    <button class="btn dark full">Request booking</button><p class="fine">No payment is collected on this demo website.</p>
+  </form>
+</section>
+<script>
+    window.snapbookPrice = Number("{{ person.price }}");
+</script>
+{% endblock %}
