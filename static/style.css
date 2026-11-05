@@ -1433,3 +1433,32 @@ small,
     font-size: 0.95rem;
     line-height: 1.7;
 }
+/* FIX: SNAPBOOK HERO HEADING */
+.hero-copy {
+    min-width: 0;
+    overflow: visible;
+}
+
+.hero h1 {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(2.8rem, 5.5vw, 5rem);
+    font-weight: 600;
+    line-height: 1.12;
+    letter-spacing: -1.5px;
+    max-width: 100%;
+    overflow-wrap: normal;
+    word-break: normal;
+}
+
+.hero h1 em {
+    display: inline;
+    white-space: normal;
+}
+/* Hero heading visibility fix */
+.hero h1 {
+    color: #ffffff;
+}
+
+.hero h1 em {
+    color: var(--gold);
+}
