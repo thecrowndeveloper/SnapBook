@@ -57,12 +57,20 @@
   <form class="filters" method="get">
     <label>
       <span>LOCATION</span>
-      <select name="city">
-        <option value="">Anywhere in Nigeria</option>
-        {% for c in ["Abuja","Lagos","Port Harcourt","Enugu","Ibadan","Benin City","Kano","Uyo","Owerri","Jos"] %}
-          <option value="{{ c }}" {% if city == c %}selected{% endif %}>{{ c }}</option>
+      <input
+        type="search"
+        name="city"
+        list="nigerian-cities"
+        value="{{ city }}"
+        placeholder="Anywhere in Nigeria"
+        autocomplete="off"
+      >
+      <datalist id="nigerian-cities">
+        {% for state, capital in locations %}
+          <option value="{{ capital }}" label="{{ state }} State"></option>
         {% endfor %}
-      </select>
+      </datalist>
+      <small class="location-hint">Choose a state capital or type any other city or town.</small>
     </label>
 
     <label>
