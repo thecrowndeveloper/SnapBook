@@ -292,6 +292,40 @@ def init_db():
             )
         """)
 
+        # Marketplace service bookings and enquiries.
+        # Payment and review fields will be added only after gateway verification
+        # and a confirmed completion workflow are implemented.
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS marketplace_bookings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                service_id INTEGER NOT NULL,
+                provider_id INTEGER NOT NULL,
+                client_user_id INTEGER NOT NULL,
+                requested_date TEXT NOT NULL,
+                client_message TEXT DEFAULT '',
+                status TEXT NOT NULL DEFAULT 'Requested'
+                    CHECK(status IN (
+                        'Requested', 'Accepted', 'In Progress',
+                        'Awaiting Client Confirmation', 'Completed',
+                        'Cancelled'
+                    )),
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(service_id) REFERENCES services(id),
+                FOREIGN KEY(provider_id) REFERENCES providers(id),
+                FOREIGN KEY(client_user_id) REFERENCES users(id)
+            )
+        """)
+
+        con.execute("""
+            CREATE INDEX IF NOT EXISTS idx_marketplace_bookings_client
+            ON marketplace_bookings(client_user_id)
+        """)
+        con.execute("""
+            CREATE INDEX IF NOT EXISTS idx_marketplace_bookings_provider
+            ON marketplace_bookings(provider_id)
+        """)
+
         # Artwork for sale and costumes for rent
         con.execute("""
             CREATE TABLE IF NOT EXISTS products (
@@ -854,7 +888,26 @@ def my_bookings():
             ORDER BY bookings.id DESC
         """, (current_user.id,)).fetchall()
 
-    return render_template("client_dashboard.html", bookings=bookings)
+        marketplace_bookings = con.execute("""
+            SELECT
+                marketplace_bookings.*,
+                providers.display_name AS professional_name,
+                providers.business_name,
+                services.title AS service_title
+            FROM marketplace_bookings
+            JOIN providers
+              ON providers.id = marketplace_bookings.provider_id
+            JOIN services
+              ON services.id = marketplace_bookings.service_id
+            WHERE marketplace_bookings.client_user_id = ?
+            ORDER BY marketplace_bookings.created_at DESC
+        """, (current_user.id,)).fetchall()
+
+    return render_template(
+        "client_dashboard.html",
+        bookings=bookings,
+        marketplace_bookings=marketplace_bookings
+    )
 
 
 @app.route("/dashboard")
@@ -989,6 +1042,137 @@ def create_service():
     return redirect(url_for("provider_dashboard"))
 
 
+
+
+@app.route("/service/<int:service_id>/request", methods=["POST"])
+@login_required
+def request_service(service_id):
+    role_required("client")
+
+    requested_date = request.form.get("requested_date", "").strip()
+    client_message = request.form.get("client_message", "").strip()
+
+    if not requested_date:
+        flash("Please select your preferred service date.", "error")
+        return redirect(request.referrer or url_for("home"))
+
+    if len(client_message) > 2000:
+        flash("Your message must not exceed 2,000 characters.", "error")
+        return redirect(request.referrer or url_for("home"))
+
+    with connect() as con:
+        service = con.execute("""
+            SELECT services.id, services.provider_id, services.booking_mode,
+                   providers.user_id, services.title
+            FROM services
+            JOIN providers ON providers.id = services.provider_id
+            WHERE services.id = ?
+              AND services.is_active = 1
+        """, (service_id,)).fetchone()
+
+        if not service:
+            abort(404)
+
+        if service["user_id"] == current_user.id:
+            flash("You cannot request your own service.", "error")
+            return redirect(url_for(
+                "public_provider", provider_id=service["provider_id"]
+            ))
+
+        existing = con.execute("""
+            SELECT id
+            FROM marketplace_bookings
+            WHERE service_id = ?
+              AND client_user_id = ?
+              AND status NOT IN ('Cancelled', 'Completed')
+        """, (service_id, current_user.id)).fetchone()
+
+        if existing:
+            flash("You already have an active request for this service.", "info")
+            return redirect(url_for(
+                "public_provider", provider_id=service["provider_id"]
+            ))
+
+        booking = con.execute("""
+            INSERT INTO marketplace_bookings (
+                service_id, provider_id, client_user_id,
+                requested_date, client_message
+            )
+            VALUES (?, ?, ?, ?, ?)
+        """, (
+            service_id, service["provider_id"], current_user.id,
+            requested_date, client_message
+        ))
+
+        if service["user_id"]:
+            con.execute("""
+                INSERT INTO notifications (
+                    user_id, title, message, notification_type, related_id
+                )
+                VALUES (?, ?, ?, ?, ?)
+            """, (
+                service["user_id"],
+                "New service request",
+                f"{current_user.name} requested {service['title']} for {requested_date}.",
+                "marketplace_booking",
+                booking.lastrowid
+            ))
+
+    flash("Your service request has been sent to the creative professional.", "success")
+    return redirect(url_for("my_bookings"))
+
+
+@app.route("/marketplace-booking/<int:booking_id>/status", methods=["POST"])
+@login_required
+def marketplace_booking_status(booking_id):
+    status = request.form.get("status", "")
+
+    with connect() as con:
+        booking = con.execute("""
+            SELECT *
+            FROM marketplace_bookings
+            WHERE id = ?
+        """, (booking_id,)).fetchone()
+
+        if not booking:
+            abort(404)
+
+        if current_user.role == "provider":
+            provider = con.execute("""
+                SELECT id FROM providers WHERE user_id = ?
+            """, (current_user.id,)).fetchone()
+
+            if not provider or provider["id"] != booking["provider_id"]:
+                abort(404)
+
+            allowed = {
+                "Requested": ("Accepted", "Cancelled"),
+                "Accepted": ("In Progress", "Cancelled"),
+                "In Progress": ("Awaiting Client Confirmation",)
+            }
+
+            if status not in allowed.get(booking["status"], ()):
+                abort(400)
+
+        elif current_user.role == "client":
+            if booking["client_user_id"] != current_user.id:
+                abort(404)
+
+            if booking["status"] != "Awaiting Client Confirmation" or status != "Completed":
+                abort(400)
+        else:
+            abort(403)
+
+        con.execute("""
+            UPDATE marketplace_bookings
+            SET status = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        """, (status, booking_id))
+
+    flash("Booking status updated.", "success")
+    if current_user.role == "provider":
+        return redirect(url_for("provider_dashboard"))
+    return redirect(url_for("my_bookings"))
 
 
 @app.route("/provider/portfolio/upload", methods=["POST"])
@@ -1258,6 +1442,21 @@ def provider_dashboard():
             ORDER BY created_at DESC
         """, (provider["id"],)).fetchall()
 
+        marketplace_bookings = con.execute("""
+            SELECT
+                marketplace_bookings.*,
+                users.name AS client_name,
+                users.email AS client_email,
+                services.title AS service_title
+            FROM marketplace_bookings
+            JOIN users
+              ON users.id = marketplace_bookings.client_user_id
+            JOIN services
+              ON services.id = marketplace_bookings.service_id
+            WHERE marketplace_bookings.provider_id = ?
+            ORDER BY marketplace_bookings.created_at DESC
+        """, (provider["id"],)).fetchall()
+
         notifications = con.execute("""
             SELECT *
             FROM notifications
@@ -1280,6 +1479,7 @@ def provider_dashboard():
                 service_categories=service_categories,
                 services=services,
                 portfolio_items=portfolio_items,
+                marketplace_bookings=marketplace_bookings,
                 notifications=notifications,
                 unread_count=unread_count
     )
