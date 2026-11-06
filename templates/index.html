@@ -10,7 +10,7 @@
     <h1>Every moment<br>has a <em>frame.</em></h1>
 
     <p class="sub">
-      Discover photographers, videographers, equipment, artwork and creative spaces.
+      Discover creative professionals, rent or buy equipment, and find inspiring spaces.
       From graduation portraits to once-in-a-lifetime celebrations,
       find your creative match across Nigeria.
     </p>
@@ -30,19 +30,45 @@
     </div>
   </div>
 
-  <div class="hero-visual">
-    <img
-      class="hero-main"
-      src="static/images/photo1.jpg"
-      alt="Portrait photography"
-    >
-
-    
+  <div class="hero-visual hero-camera-panel" aria-label="Camera illustration">
+    <div class="camera-glow"></div>
+    <svg class="hero-camera" viewBox="0 0 560 390" role="img" aria-labelledby="camera-title">
+      <title id="camera-title">Professional camera illustration</title>
+      <defs>
+        <linearGradient id="cameraBody" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#45434d"/>
+          <stop offset="1" stop-color="#111116"/>
+        </linearGradient>
+        <radialGradient id="cameraLens">
+          <stop offset="0" stop-color="#9b78d7"/>
+          <stop offset=".28" stop-color="#25243b"/>
+          <stop offset=".62" stop-color="#08090e"/>
+          <stop offset=".82" stop-color="#5a5668"/>
+          <stop offset="1" stop-color="#111116"/>
+        </radialGradient>
+      </defs>
+      <g transform="translate(42 58)">
+        <path d="M105 76 142 31h105l34 45" fill="#292832" stroke="#77717e" stroke-width="5"/>
+        <rect x="38" y="75" width="405" height="225" rx="28" fill="url(#cameraBody)" stroke="#77717e" stroke-width="6"/>
+        <rect x="65" y="93" width="350" height="190" rx="17" fill="#202027" stroke="#09090d" stroke-width="5"/>
+        <circle cx="244" cy="187" r="111" fill="#0b0b10" stroke="#77717e" stroke-width="8"/>
+        <circle cx="244" cy="187" r="94" fill="url(#cameraLens)" stroke="#292934" stroke-width="10"/>
+        <circle cx="244" cy="187" r="57" fill="none" stroke="#9d8bc2" stroke-opacity=".55" stroke-width="3"/>
+        <circle cx="244" cy="187" r="27" fill="#080910" stroke="#8e7bb0" stroke-width="3"/>
+        <path d="M222 165q22-19 43 0" fill="none" stroke="#d9c6ff" stroke-opacity=".65" stroke-width="5" stroke-linecap="round"/>
+        <rect x="80" y="53" width="76" height="25" rx="7" fill="#35343d"/>
+        <circle cx="374" cy="111" r="10" fill="#9b6cf0"/>
+        <rect x="83" y="256" width="48" height="9" rx="4" fill="#77717e"/>
+        <path d="M40 130h-18v75h18" fill="#282730"/>
+        <path d="M443 137h20v65h-20" fill="#282730"/>
+      </g>
+    </svg>
+    <div class="camera-caption"><span></span> YOUR NEXT CREATIVE PROJECT STARTS HERE</div>
     <div class="hero-index">01 <span>—</span> 04</div>
   </div>
 
   <div class="hero-bottom">
-    <span>PHOTOGRAPHY, BOOKED SIMPLY</span>
+    <span>CREATIVITY, CONNECTED</span>
     <span>ABUJA · LAGOS · PORT HARCOURT · AND BEYOND</span>
   </div>
 </section>
@@ -93,42 +119,41 @@
 <section class="section category-section" id="categories">
   <div class="section-head">
     <div>
-      <p class="eyebrow">MADE FOR EVERY CHAPTER</p>
-      <h2>What are we capturing?</h2>
+      <p class="eyebrow">ONE MARKETPLACE. MANY POSSIBILITIES.</p>
+      <h2>Explore what you need</h2>
     </div>
-    <p class="muted">The big milestones and the beautifully ordinary days.</p>
+    <p class="muted">Find creative talent, equipment and inspiring places for your next project.</p>
   </div>
 
-  <div class="category-grid">
-
-    <a class="category-tile" href="{{ url_for('home', specialty='Portrait') }}">
-      <img src="static/images/photo2.jpg" alt="Portrait photography">
-      <span>01</span>
-      <b>Portraits</b>
-      <i></i>
+  <div class="marketplace-categories">
+    <a class="marketplace-category photography-category" href="{{ url_for('home', category='photography') }}">
+      <span class="marketplace-icon" aria-hidden="true">◎</span>
+      <span class="marketplace-number">01 / CREATE</span>
+      <b>Photography</b>
+      <small>Portraits, events, products and more</small>
+      <i>Explore category ↗</i>
     </a>
-
-    <a class="category-tile" href="{{ url_for('home', specialty='Graduation') }}">
-      <img src="static/images/photo3.jpg" alt="Graduation photography">
-      <span>02</span>
-      <b>Graduation</b>
-      <i></i>
+    <a class="marketplace-category videography-category" href="{{ url_for('home', category='videography') }}">
+      <span class="marketplace-icon" aria-hidden="true">▶</span>
+      <span class="marketplace-number">02 / TELL STORIES</span>
+      <b>Videography</b>
+      <small>Films, events, reels and production</small>
+      <i>Explore category ↗</i>
     </a>
-
-    <a class="category-tile" href="{{ url_for('home', specialty='Fashion') }}">
-      <img src="static/images/photo4.jpg" alt="Fashion photography">
-      <span>03</span>
-      <b>Fashion & model</b>
-      <i></i>
+    <a class="marketplace-category equipment-category" href="{{ url_for('home', category='media-equipment') }}">
+      <span class="marketplace-icon" aria-hidden="true">▣</span>
+      <span class="marketplace-number">03 / GET EQUIPPED</span>
+      <b>Equipment sales & rentals</b>
+      <small>Find the gear your project needs</small>
+      <i>Explore category ↗</i>
     </a>
-
-    <a class="category-tile" href="{{ url_for('home', specialty='Events') }}">
-      <img src="static/images/photo7.jpg" alt="Celebration photography">
-      <span>04</span>
-      <b>Weddings & events</b>
-      <i></i>
+    <a class="marketplace-category spaces-category" href="{{ url_for('home', category='spaces-studios') }}">
+      <span class="marketplace-icon" aria-hidden="true">⌂</span>
+      <span class="marketplace-number">04 / FIND YOUR SPACE</span>
+      <b>Spaces & studios</b>
+      <small>Studios, event and content spaces</small>
+      <i>Explore category ↗</i>
     </a>
-
   </div>
 </section>
 
