@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Find your photographer{% endblock %}
+{% block title %}Discover creative professionals{% endblock %}
 
 {% block content %}
 
@@ -10,13 +10,13 @@
     <h1>Every moment<br>has a <em>frame.</em></h1>
 
     <p class="sub">
-      Discover photographers who know how to tell your story.
+      Discover photographers, videographers, equipment, artwork and creative spaces.
       From graduation portraits to once-in-a-lifetime celebrations,
       find your creative match across Nigeria.
     </p>
 
     <a class="btn gold" href="#discover">
-      Explore photographers <b></b>
+      Explore the marketplace <b></b>
     </a>
 
     <div class="hero-proof">
@@ -51,7 +51,7 @@
 <section class="search-band" id="discover">
   <div class="search-intro">
     <span class="eyebrow">START WITH THE DETAILS</span>
-    <h2>Who are you looking for?</h2>
+    <h2>What do you need?</h2>
   </div>
 
   <form class="filters" method="get">
@@ -66,7 +66,7 @@
     </label>
 
     <label>
-      <span>PHOTOGRAPHY TYPE</span>
+      <span>MARKETPLACE CATEGORY</span>
       <select name="specialty">
         <option value="">All photography</option>
         {% for s in ["Portrait","Graduation","Fashion","Model","Wedding","Events","Birthday","Product","Lifestyle","Branding"] %}
@@ -75,7 +75,7 @@
       </select>
     </label>
 
-    <button class="btn dark">Search photographers</button>
+    <button class="btn dark">Search marketplace</button>
   </form>
 </section>
 
@@ -127,9 +127,9 @@
   <div class="section-head">
     <div>
       <p class="eyebrow">THE CREATIVE DIRECTORY</p>
-      <h2>Meet your photographer</h2>
+      <h2>Meet creative professionals</h2>
     </div>
-    <p class="muted">Browse local talent, compare prices and find your fit.</p>
+    <p class="muted">Browse creative talent, compare services and find your fit.</p>
   </div>
 
   {% if city or specialty %}
@@ -168,8 +168,8 @@
       </article>
     {% else %}
       <div class="no-results">
-        <b>No photographers found just yet.</b>
-        <p>Try another city or photography style.</p>
+        <b>No matching creative professionals found just yet.</b>
+        <p>Try another location or marketplace category.</p>
         <a class="text-link" href="{{ url_for('home') }}">View all photographers ↗</a>
       </div>
     {% endfor %}
@@ -196,7 +196,7 @@
     <div>
       <b>01</b>
       <h3>Explore</h3>
-      <p>Discover photographers by location and style. Take your time with their work.</p>
+      <p>Discover creative professionals by category and location.</p>
     </div>
 
     <div>
@@ -217,7 +217,7 @@
 <section class="closing">
   <p class="eyebrow">YOUR NEXT CHAPTER, IN FOCUS</p>
   <h2>Let's make a memory<br><em>worth keeping.</em></h2>
-  <a class="btn gold" href="#discover">Find your photographer</a>
+  <a class="btn gold" href="#discover">Discover creative professionals</a>
 </section>
 
 {% endblock %}
