@@ -56,6 +56,48 @@ DEFAULT_IMAGE = (
     "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=900"
 )
 
+# Nigerian state capitals and the Federal Capital Territory.
+# The search field also accepts other cities and towns.
+NIGERIAN_LOCATIONS = [
+    ("Abia", "Umuahia"),
+    ("Adamawa", "Yola"),
+    ("Akwa Ibom", "Uyo"),
+    ("Anambra", "Awka"),
+    ("Bauchi", "Bauchi"),
+    ("Bayelsa", "Yenagoa"),
+    ("Benue", "Makurdi"),
+    ("Borno", "Maiduguri"),
+    ("Cross River", "Calabar"),
+    ("Delta", "Asaba"),
+    ("Ebonyi", "Abakaliki"),
+    ("Edo", "Benin City"),
+    ("Ekiti", "Ado-Ekiti"),
+    ("Enugu", "Enugu"),
+    ("Gombe", "Gombe"),
+    ("Imo", "Owerri"),
+    ("Jigawa", "Dutse"),
+    ("Kaduna", "Kaduna"),
+    ("Kano", "Kano"),
+    ("Katsina", "Katsina"),
+    ("Kebbi", "Birnin Kebbi"),
+    ("Kogi", "Lokoja"),
+    ("Kwara", "Ilorin"),
+    ("Lagos", "Ikeja"),
+    ("Nasarawa", "Lafia"),
+    ("Niger", "Minna"),
+    ("Ogun", "Abeokuta"),
+    ("Ondo", "Akure"),
+    ("Osun", "Osogbo"),
+    ("Oyo", "Ibadan"),
+    ("Plateau", "Jos"),
+    ("Rivers", "Port Harcourt"),
+    ("Sokoto", "Sokoto"),
+    ("Taraba", "Jalingo"),
+    ("Yobe", "Damaturu"),
+    ("Zamfara", "Gusau"),
+    ("FCT", "Abuja"),
+]
+
 
 def connect():
     con = sqlite3.connect(DB)
@@ -456,6 +498,7 @@ def home():
         photographers=photographers,
         creative_professionals=creative_professionals,
         categories=categories,
+        locations=NIGERIAN_LOCATIONS,
         city=city,
         specialty=specialty,
         category_slug=category_slug
