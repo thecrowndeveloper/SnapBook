@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ provider.business_name or provider.display_name }} | SnapBook{% endblock %}
+{% block title %}{{ provider.business_name or provider.display_name }} | OneCre8 Media{% endblock %}
 
 {% block content %}
 <section class="section">
@@ -64,7 +64,7 @@
     <div class="auth-card">
         <h2>Portfolio</h2>
         <p class="muted">
-            Explore examples of this provider's previous work.
+            Explore examples of this creative professional's previous work.
         </p>
 
         {% if portfolio_items %}
@@ -98,7 +98,7 @@
             {% endfor %}
         {% else %}
             <p class="muted">
-                This provider has not added portfolio items yet.
+                This creative professional has not added portfolio items yet.
             </p>
         {% endif %}
     </div>
