@@ -1497,3 +1497,142 @@ small,
         grid-template-columns: 1fr;
     }
 }
+
+/* ONECRE8 MARKETPLACE HOMEPAGE */
+.hero-camera-panel {
+  min-height: 500px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  isolation: isolate;
+  background:
+    radial-gradient(ellipse at 58% 48%, rgba(112, 63, 190, .28), transparent 52%),
+    linear-gradient(145deg, #24212e 0%, #111116 72%);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 18px;
+  overflow: hidden;
+}
+.camera-glow {
+  position: absolute;
+  width: 70%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: rgba(125, 79, 210, .17);
+  filter: blur(55px);
+  z-index: -1;
+}
+.hero-camera {
+  width: min(100%, 540px);
+  height: auto;
+  filter: drop-shadow(0 25px 28px rgba(0,0,0,.48));
+}
+.camera-caption {
+  position: absolute;
+  left: 22px;
+  bottom: 23px;
+  color: #c9c4d3;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+}
+.camera-caption span {
+  display: inline-block;
+  width: 18px;
+  height: 2px;
+  margin: 0 8px 3px 0;
+  background: var(--gold);
+}
+.marketplace-categories {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+.marketplace-category {
+  min-height: 245px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  color: #fff !important;
+  background: linear-gradient(145deg, #30263e, #17151e 78%);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.marketplace-category::before {
+  content: "";
+  position: absolute;
+  width: 190px;
+  height: 190px;
+  border-radius: 50%;
+  right: -55px;
+  top: -60px;
+  background: rgba(151, 101, 225, .17);
+  filter: blur(3px);
+}
+.marketplace-category:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 16px 35px rgba(24,18,35,.16);
+}
+.marketplace-icon {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  font-size: 48px;
+  line-height: 1;
+  color: #c19af5;
+}
+.marketplace-number {
+  color: #c7a2f3;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  margin-bottom: 9px;
+}
+.marketplace-category b {
+  font: 700 19px 'Manrope', sans-serif;
+  line-height: 1.3;
+}
+.marketplace-category small {
+  color: #c4bfcc;
+  font-size: 11px;
+  margin-top: 8px;
+}
+.marketplace-category i {
+  font-style: normal;
+  color: #e0c8ff;
+  font-size: 10px;
+  font-weight: 700;
+  margin-top: 20px;
+}
+.videography-category { background: linear-gradient(145deg, #252f45, #151720 78%); }
+.equipment-category { background: linear-gradient(145deg, #3b3027, #1b1716 78%); }
+.spaces-category { background: linear-gradient(145deg, #263a36, #151c1a 78%); }
+.location-hint {
+  color: #77756f;
+  font-size: 10px;
+  line-height: 1.4;
+}
+.filters input[type="search"] {
+  height: 48px;
+  padding: 0 13px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 11px;
+  min-width: 0;
+}
+@media (max-width: 1050px) {
+  .marketplace-categories { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 700px) {
+  .hero-camera-panel { min-height: 300px; margin: 0 0 20px; }
+  .hero-camera { width: 95%; }
+  .marketplace-categories { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .marketplace-category { min-height: 205px; padding: 16px; }
+  .marketplace-icon { top: 16px; left: 16px; font-size: 38px; }
+  .marketplace-category b { font-size: 15px; }
+  .marketplace-category small { font-size: 10px; }
+  .camera-caption { left: 14px; bottom: 13px; font-size: 7px; }
+}
