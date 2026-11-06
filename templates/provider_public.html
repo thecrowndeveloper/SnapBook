@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}{{ provider.business_name or provider.display_name }} | SnapBook{% endblock %}
+
+{% block content %}
+<section class="section">
+
+    <p class="eyebrow">CREATIVE PROFESSIONAL</p>
+
+    <div class="auth-card">
+        <h1>{{ provider.business_name or provider.display_name }}</h1>
+
+        {% if provider.business_name %}
+            <p class="muted">{{ provider.display_name }}</p>
+        {% endif %}
+
+        <p><strong>Location:</strong> {{ provider.city }}</p>
+
+        {% if provider.bio %}
+            <h3>About</h3>
+            <p>{{ provider.bio }}</p>
+        {% endif %}
+
+        {% if categories %}
+            <h3>Specialties</h3>
+            <ul>
+                {% for category in categories %}
+                    <li>{{ category.name }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+
+    <div class="auth-card">
+        <h2>Services</h2>
+
+        {% if services %}
+            {% for service in services %}
+                <div>
+                    <h3>{{ service.title }}</h3>
+                    <p class="muted">{{ service.category_name }}</p>
+
+                    {% if service.description %}
+                        <p>{{ service.description }}</p>
+                    {% endif %}
+
+                    {% if service.pricing_mode == 'fixed' %}
+                        <p>
+                            Price: {{ "%.2f"|format(service.price) }}
+                        </p>
+                    {% else %}
+                        <p>Custom quote available</p>
+                    {% endif %}
+
+                    <p>Request method: {{ service.booking_mode|title }}</p>
+                </div>
+                <hr>
+            {% endfor %}
+        {% else %}
+            <p class="muted">No services have been published yet.</p>
+        {% endif %}
+    </div>
+
+    <div class="auth-card">
+        <h2>Portfolio</h2>
+        <p class="muted">
+            Explore examples of this provider's previous work.
+        </p>
+
+        {% if portfolio_items %}
+            {% for item in portfolio_items %}
+                <div class="portfolio-item">
+                    <h3>{{ item.title }}</h3>
+
+                    {% if item.media_type == 'image' %}
+                        <img
+                            src="{{ url_for('portfolio_media', filename=item.filename) }}"
+                            alt="{{ item.title }}"
+                            loading="lazy"
+                            style="max-width: 100%; height: auto;">
+                    {% else %}
+                        <video
+                            controls
+                            preload="metadata"
+                            style="max-width: 100%; height: auto;">
+                            <source
+                                src="{{ url_for('portfolio_media', filename=item.filename) }}"
+                                type="video/mp4">
+                            Your browser does not support video playback.
+                        </video>
+                    {% endif %}
+
+                    {% if item.description %}
+                        <p>{{ item.description }}</p>
+                    {% endif %}
+                </div>
+                <hr>
+            {% endfor %}
+        {% else %}
+            <p class="muted">
+                This provider has not added portfolio items yet.
+            </p>
+        {% endif %}
+    </div>
+
+    <p>
+        <a href="{{ url_for('home') }}">Back to Explore</a>
+    </p>
+
+</section>
+{% endblock %}

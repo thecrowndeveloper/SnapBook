@@ -5,3 +5,4 @@ __pycache__/
 instance/
 snapbook.db
 snapbook_backup.db
+*.db

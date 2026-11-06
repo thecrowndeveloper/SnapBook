@@ -1462,3 +1462,38 @@ small,
 .hero h1 em {
     color: var(--gold);
 }
+
+/* Provider registration category selection */
+.category-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.category-options label {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid var(--line);
+    background: #fff;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.category-options input[type="checkbox"] {
+    width: auto;
+    min-width: 16px;
+    margin: 0;
+    flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+    .category-options {
+        grid-template-columns: 1fr;
+    }
+}

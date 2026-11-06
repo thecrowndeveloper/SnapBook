@@ -7,6 +7,38 @@
     <p class="eyebrow">PHOTOGRAPHER WORKSPACE</p>
     <h1>Your booking requests</h1>
     <p class="muted">Welcome, {{ current_user.name }}. Manage requests for your photography profile.</p>
+    <div class="auth-card">
+        <h2>
+            Notifications
+            {% if unread_count %}
+                ({{ unread_count }} new)
+            {% endif %}
+        </h2>
+
+        {% if notifications %}
+            {% for notification in notifications %}
+                <div class="{% if not notification.is_read %}unread{% endif %}">
+                    <strong>{{ notification.title }}</strong>
+                    <p>{{ notification.message }}</p>
+                    <small>{{ notification.created_at }}</small>
+                </div>
+                <hr>
+            {% endfor %}
+
+            {% if unread_count %}
+                <form method="POST"
+                      action="{{ url_for('mark_notifications_read') }}">
+                    <input type="hidden" name="csrf_token"
+                           value="{{ csrf_token() }}">
+                    <button type="submit" class="mini-btn">
+                        Mark all as read
+                    </button>
+                </form>
+            {% endif %}
+        {% else %}
+            <p class="muted">You have no notifications yet.</p>
+        {% endif %}
+    </div>
 
     {% if bookings %}
     <div class="table-wrap">

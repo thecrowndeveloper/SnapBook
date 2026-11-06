@@ -22,8 +22,10 @@
     <a href="{{ url_for('home') }}">Explore</a>
 
     {% if current_user.is_authenticated %}
-        {% if current_user.role == 'photographer' %}
+                {% if current_user.role == 'photographer' %}
             <a href="{{ url_for('dashboard') }}">My dashboard</a>
+        {% elif current_user.role == 'provider' %}
+            <a href="{{ url_for('provider_dashboard') }}">Provider dashboard</a>
         {% else %}
             <a href="{{ url_for('my_bookings') }}">My bookings</a>
         {% endif %}

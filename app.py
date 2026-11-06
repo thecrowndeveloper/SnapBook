@@ -6,7 +6,7 @@ from datetime import datetime
 
 from flask import (
     Flask, render_template, request, redirect,
-    url_for, flash, abort
+    url_for, flash, abort, send_from_directory
 )
 from flask_login import (
     LoginManager, UserMixin, current_user,
@@ -14,6 +14,10 @@ from flask_login import (
 )
 from flask_wtf.csrf import CSRFProtect
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
+from uuid import uuid4
+from mutagen.mp4 import MP4
+
 
 app = Flask(__name__)
 app.secret_key = os.environ.get(
@@ -36,6 +40,18 @@ else:
     DB = Path(__file__).with_name("snapbook.db")
 
 DB.parent.mkdir(parents=True, exist_ok=True)
+
+# Persistent storage for provider portfolio uploads
+PORTFOLIO_UPLOAD_FOLDER = (
+    Path(volume_path) / "portfolio"
+    if volume_path
+    else Path(__file__).with_name("portfolio_uploads")
+)
+PORTFOLIO_UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
+
+app.config["PORTFOLIO_UPLOAD_FOLDER"] = str(PORTFOLIO_UPLOAD_FOLDER)
+app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024
+
 DEFAULT_IMAGE = (
     "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=900"
 )
@@ -81,6 +97,57 @@ def add_column_if_missing(con, table, column, definition):
         )
 
 
+def migrate_user_roles(con):
+    """Allow provider accounts while preserving existing user records."""
+
+    table_sql = con.execute("""
+        SELECT sql
+        FROM sqlite_master
+        WHERE type = 'table' AND name = 'users'
+    """).fetchone()["sql"]
+
+    if "'provider'" in table_sql:
+        return
+
+    con.execute("PRAGMA foreign_keys = OFF")
+
+    try:
+        con.execute("BEGIN")
+
+        con.execute("""
+            CREATE TABLE users_new (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+                password_hash TEXT NOT NULL,
+                role TEXT NOT NULL
+                    CHECK(role IN ('client', 'photographer', 'provider')),
+                created_at TEXT NOT NULL
+            )
+        """)
+
+        con.execute("""
+            INSERT INTO users_new
+                (id, name, email, password_hash, role, created_at)
+            SELECT
+                id, name, email, password_hash, role, created_at
+            FROM users
+        """)
+
+        con.execute("DROP TABLE users")
+        con.execute("ALTER TABLE users_new RENAME TO users")
+
+        con.commit()
+
+    except Exception:
+        con.rollback()
+        raise
+
+    finally:
+        con.execute("PRAGMA foreign_keys = ON")
+
+
+
 def init_db():
     with connect() as con:
         con.execute("""
@@ -123,6 +190,141 @@ def init_db():
             )
         """)
 
+        migrate_user_roles(con)
+
+        # Marketplace categories
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS categories (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                slug TEXT NOT NULL UNIQUE,
+                description TEXT DEFAULT ''
+            )
+        """)
+
+        # Creative professionals and businesses
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS providers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER UNIQUE,
+                display_name TEXT NOT NULL,
+                business_name TEXT DEFAULT '',
+                bio TEXT DEFAULT '',
+                city TEXT DEFAULT '',
+                profile_image TEXT DEFAULT '',
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(user_id) REFERENCES users(id)
+            )
+        """)
+
+        # Categories offered by each provider
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS provider_categories (
+                provider_id INTEGER NOT NULL,
+                category_id INTEGER NOT NULL,
+                PRIMARY KEY(provider_id, category_id),
+                FOREIGN KEY(provider_id) REFERENCES providers(id)
+                    ON DELETE CASCADE,
+                FOREIGN KEY(category_id) REFERENCES categories(id)
+                    ON DELETE CASCADE
+            )
+        """)
+
+        # Services offered by providers
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS services (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                provider_id INTEGER NOT NULL,
+                category_id INTEGER NOT NULL,
+                title TEXT NOT NULL,
+                description TEXT DEFAULT '',
+                pricing_mode TEXT NOT NULL
+                    CHECK(pricing_mode IN ('fixed', 'quote')),
+                booking_mode TEXT NOT NULL
+                    CHECK(booking_mode IN ('booking', 'enquiry')),
+                price REAL,
+                is_active INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(provider_id) REFERENCES providers(id),
+                FOREIGN KEY(category_id) REFERENCES categories(id)
+            )
+        """)
+
+        # Artwork for sale and costumes for rent
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS products (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                provider_id INTEGER NOT NULL,
+                category_id INTEGER NOT NULL,
+                title TEXT NOT NULL,
+                description TEXT DEFAULT '',
+                listing_type TEXT NOT NULL
+                    CHECK(listing_type IN ('sale', 'rental')),
+                price REAL NOT NULL,
+                quantity_available INTEGER NOT NULL DEFAULT 1,
+                image TEXT DEFAULT '',
+                is_active INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(provider_id) REFERENCES providers(id),
+                FOREIGN KEY(category_id) REFERENCES categories(id)
+            )
+        """)
+
+
+                # Provider portfolio: images and videos of previous work
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS portfolio_items (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                provider_id INTEGER NOT NULL,
+                media_type TEXT NOT NULL
+                    CHECK(media_type IN ('image', 'video')),
+                filename TEXT NOT NULL,
+                title TEXT NOT NULL,
+                description TEXT DEFAULT '',
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(provider_id) REFERENCES providers(id)
+                    ON DELETE CASCADE
+            )
+        """)
+
+        con.execute("""
+            CREATE INDEX IF NOT EXISTS idx_portfolio_provider
+            ON portfolio_items(provider_id)
+        """)
+
+        # Notifications for photographers and marketplace providers
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS notifications (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                title TEXT NOT NULL,
+                message TEXT NOT NULL,
+                notification_type TEXT NOT NULL,
+                related_id INTEGER,
+                is_read INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(user_id) REFERENCES users(id)
+                    ON DELETE CASCADE
+            )
+        """)
+
+        # Add the initial marketplace categories
+        categories = [
+            ("Photography", "photography"),
+            ("Videography", "videography"),
+            ("Artwork", "artwork"),
+            ("Photo Framing", "photo-framing"),
+            ("Interior Design", "interior-design"),
+            ("Costume Rentals", "costume-rentals"),
+            ("Media Equipment", "media-equipment")
+        ]
+
+        con.executemany("""
+            INSERT OR IGNORE INTO categories (name, slug)
+            VALUES (?, ?)
+        """, categories)
+
+
         # Add account ownership to existing records without deleting them.
         add_column_if_missing(
             con, "photographers", "user_id",
@@ -131,6 +333,11 @@ def init_db():
         add_column_if_missing(
             con, "bookings", "client_user_id",
             "INTEGER REFERENCES users(id)"
+        )
+
+        add_column_if_missing(
+            con, "bookings", "viewed_at",
+            "TEXT"
         )
 
         con.execute("""
@@ -222,13 +429,19 @@ def home():
     )
 
 
+
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if current_user.is_authenticated:
         return redirect(url_for("home"))
 
+    with connect() as con:
+        categories = con.execute(
+            "SELECT id, name FROM categories ORDER BY id"
+        ).fetchall()
+
     role = request.args.get("role", "client")
-    if role not in ("client", "photographer"):
+    if role not in ("client", "provider", "photographer"):
         role = "client"
 
     if request.method == "POST":
@@ -237,17 +450,64 @@ def register():
         password = request.form.get("password", "")
         role = request.form.get("role", "client")
 
-        if role not in ("client", "photographer"):
+        if role not in ("client", "provider", "photographer"):
             flash("Please choose a valid account type.", "error")
-            return render_template("register.html", role="client")
+            return render_template(
+                "register.html", role="client", categories=categories
+            )
 
         if not name or not email or not password:
             flash("Please complete all required fields.", "error")
-            return render_template("register.html", role=role)
+            return render_template(
+                "register.html", role=role, categories=categories
+            )
 
         if len(password) < 8:
             flash("Your password must contain at least 8 characters.", "error")
-            return render_template("register.html", role=role)
+            return render_template(
+                "register.html", role=role, categories=categories
+            )
+
+        provider_data = None
+        selected_category_ids = []
+
+        if role == "provider":
+            city = request.form.get("city", "").strip()
+            bio = request.form.get("bio", "").strip()
+            business_name = request.form.get("business_name", "").strip()
+
+            try:
+                selected_category_ids = list({
+                    int(value)
+                    for value in request.form.getlist("category_ids")
+                })
+            except ValueError:
+                flash("Please choose valid service categories.", "error")
+                return render_template(
+                    "register.html", role=role, categories=categories
+                )
+
+            valid_ids = {category["id"] for category in categories}
+
+            if not city or not bio:
+                flash("Please complete your provider profile.", "error")
+                return render_template(
+                    "register.html", role=role, categories=categories
+                )
+
+            if not selected_category_ids:
+                flash("Please select at least one category.", "error")
+                return render_template(
+                    "register.html", role=role, categories=categories
+                )
+
+            if not set(selected_category_ids).issubset(valid_ids):
+                flash("One or more selected categories are invalid.", "error")
+                return render_template(
+                    "register.html", role=role, categories=categories
+                )
+
+            provider_data = (name, business_name, bio, city)
 
         photographer_data = None
 
@@ -265,11 +525,15 @@ def register():
 
             if not city or not specialty or not bio:
                 flash("Please complete your photographer profile.", "error")
-                return render_template("register.html", role=role)
+                return render_template(
+                    "register.html", role=role, categories=categories
+                )
 
             if price <= 0 or max_sessions < 1:
                 flash("Enter a valid price and session limit.", "error")
-                return render_template("register.html", role=role)
+                return render_template(
+                    "register.html", role=role, categories=categories
+                )
 
             photographer_data = (
                 name, city, specialty, bio, price, max_sessions,
@@ -301,6 +565,24 @@ def register():
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, (*photographer_data, user_id))
 
+                if provider_data:
+                    provider_cursor = con.execute("""
+                        INSERT INTO providers
+                        (user_id, display_name, business_name, bio, city)
+                        VALUES (?, ?, ?, ?, ?)
+                    """, (user_id, *provider_data))
+
+                    provider_id = provider_cursor.lastrowid
+
+                    con.executemany("""
+                        INSERT INTO provider_categories
+                        (provider_id, category_id)
+                        VALUES (?, ?)
+                    """, [
+                        (provider_id, category_id)
+                        for category_id in selected_category_ids
+                    ])
+
                 user_row = con.execute(
                     "SELECT * FROM users WHERE id = ?", (user_id,)
                 ).fetchone()
@@ -310,12 +592,17 @@ def register():
 
             if role == "photographer":
                 return redirect(url_for("dashboard"))
-            return redirect(url_for("my_bookings"))
 
+            if role == "provider":
+                return redirect(url_for("provider_dashboard"))
+
+            return redirect(url_for("my_bookings"))
         except sqlite3.IntegrityError:
             flash("An account with that email already exists.", "error")
 
-    return render_template("register.html", role=role)
+    return render_template(
+        "register.html", role=role, categories=categories
+    )
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -342,12 +629,15 @@ def login():
 
             if row["role"] == "photographer":
                 return redirect(url_for("dashboard"))
+
+            if row["role"] == "provider":
+                return redirect(url_for("provider_dashboard"))
+
             return redirect(url_for("my_bookings"))
 
-        flash("Email or password is incorrect.", "error")
+            flash("Invalid email or password.", "error")
 
     return render_template("login.html")
-
 
 @app.route("/logout", methods=["POST"])
 @login_required
@@ -436,7 +726,7 @@ def book(photographer_id):
                 else None
             )
 
-            con.execute("""
+            booking_cursor = con.execute("""
                 INSERT INTO bookings
                 (photographer_id, client_name, email, session_date,
                  session_time, sessions, notes, client_user_id)
@@ -445,6 +735,18 @@ def book(photographer_id):
                 photographer_id, name, email, date,
                 time, sessions, notes, client_user_id
             ))
+            if person["user_id"]:
+                con.execute("""
+                    INSERT INTO notifications
+                    (user_id, title, message, notification_type, related_id)
+                    VALUES (?, ?, ?, ?, ?)
+                """, (
+                    person["user_id"],
+                    "New photography booking",
+                    f"{name} requested a session for {date} at {time}.",
+                    "booking",
+                    booking_cursor.lastrowid
+                ))
 
             flash(
                 "Your booking request has been submitted. "
@@ -495,9 +797,432 @@ def dashboard():
             ORDER BY bookings.id DESC
         """, (current_user.id,)).fetchall()
 
-    return render_template("dashboard.html", bookings=bookings)
+        notifications = con.execute("""
+            SELECT *
+            FROM notifications
+            WHERE user_id = ?
+            ORDER BY created_at DESC
+            LIMIT 20
+        """, (current_user.id,)).fetchall()
+
+        unread_count = con.execute("""
+            SELECT COUNT(*)
+            FROM notifications
+            WHERE user_id = ? AND is_read = 0
+        """, (current_user.id,)).fetchone()[0]
+
+    return render_template(
+        "dashboard.html",
+        bookings=bookings,
+        notifications=notifications,
+        unread_count=unread_count
+    )
 
 
+@app.route("/provider/services/create", methods=["POST"])
+@login_required
+def create_service():
+    role_required("provider")
+
+    title = request.form.get("title", "").strip()
+    description = request.form.get("description", "").strip()
+    pricing_mode = request.form.get("pricing_mode", "")
+    booking_mode = request.form.get("booking_mode", "")
+
+    try:
+        category_id = int(request.form.get("category_id", ""))
+    except ValueError:
+        flash("Please select a valid category.", "error")
+        return redirect(url_for("provider_dashboard"))
+
+    if not title:
+        flash("Please enter a service title.", "error")
+        return redirect(url_for("provider_dashboard"))
+
+    if pricing_mode not in ("fixed", "quote"):
+        flash("Please select a valid pricing option.", "error")
+        return redirect(url_for("provider_dashboard"))
+
+    if booking_mode not in ("booking", "enquiry"):
+        flash("Please select a valid booking option.", "error")
+        return redirect(url_for("provider_dashboard"))
+
+    if pricing_mode == "quote" and booking_mode != "enquiry":
+        flash("Custom quotes must use the enquiry option.", "error")
+        return redirect(url_for("provider_dashboard"))
+
+    price = None
+
+    if pricing_mode == "fixed":
+        try:
+            price = float(request.form.get("price", ""))
+        except ValueError:
+            flash("Please enter a valid service price.", "error")
+            return redirect(url_for("provider_dashboard"))
+
+        if price <= 0:
+            flash("Service price must be greater than zero.", "error")
+            return redirect(url_for("provider_dashboard"))
+
+    with connect() as con:
+        provider = con.execute("""
+            SELECT id
+            FROM providers
+            WHERE user_id = ?
+        """, (current_user.id,)).fetchone()
+
+        if not provider:
+            abort(404)
+
+        category = con.execute("""
+            SELECT categories.id
+            FROM categories
+            JOIN provider_categories
+              ON categories.id = provider_categories.category_id
+            WHERE categories.id = ?
+              AND provider_categories.provider_id = ?
+              AND categories.slug != 'costume-rentals'
+        """, (category_id, provider["id"])).fetchone()
+
+        if not category:
+            flash("Please select one of your permitted service categories.", "error")
+            return redirect(url_for("provider_dashboard"))
+
+        con.execute("""
+            INSERT INTO services (
+                provider_id,
+                category_id,
+                title,
+                description,
+                pricing_mode,
+                booking_mode,
+                price
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (
+            provider["id"],
+            category_id,
+            title,
+            description,
+            pricing_mode,
+            booking_mode,
+            price
+        ))
+
+    flash("Your service has been published.", "success")
+    return redirect(url_for("provider_dashboard"))
+
+
+
+
+@app.route("/provider/portfolio/upload", methods=["POST"])
+@login_required
+def upload_portfolio():
+    role_required("provider")
+
+    title = request.form.get("title", "").strip()
+    description = request.form.get("description", "").strip()
+    uploaded_file = request.files.get("media")
+
+    if not title or len(title) > 150:
+        flash("Please enter a title of no more than 150 characters.", "error")
+        return redirect(url_for("provider_dashboard"))
+
+    if len(description) > 1000:
+        flash("Description must not exceed 1000 characters.", "error")
+        return redirect(url_for("provider_dashboard"))
+
+    if not uploaded_file or not uploaded_file.filename:
+        flash("Please choose an image or MP4 video.", "error")
+        return redirect(url_for("provider_dashboard"))
+
+    safe_original_name = secure_filename(uploaded_file.filename)
+    suffix = Path(safe_original_name).suffix.lower()
+
+    image_extensions = {".jpg", ".jpeg", ".png", ".webp"}
+
+    if suffix not in image_extensions | {".mp4"}:
+        flash("Unsupported file. Use JPG, PNG, WEBP or MP4.", "error")
+        return redirect(url_for("provider_dashboard"))
+
+    with connect() as con:
+        provider = con.execute("""
+            SELECT id
+            FROM providers
+            WHERE user_id = ?
+        """, (current_user.id,)).fetchone()
+
+    if not provider:
+        abort(404)
+
+    filename = uuid4().hex + suffix
+    file_path = PORTFOLIO_UPLOAD_FOLDER / filename
+
+    uploaded_file.save(file_path)
+
+    try:
+        if suffix in image_extensions:
+            with file_path.open("rb") as media_file:
+                signature = media_file.read(12)
+
+            valid_image = (
+                (suffix in {".jpg", ".jpeg"}
+                 and signature.startswith(b"\xff\xd8\xff"))
+                or
+                (suffix == ".png"
+                 and signature.startswith(b"\x89PNG\r\n\x1a\n"))
+                or
+                (suffix == ".webp"
+                 and signature[:4] == b"RIFF"
+                 and signature[8:12] == b"WEBP")
+            )
+
+            if not valid_image:
+                raise ValueError("The uploaded image is invalid.")
+
+            media_type = "image"
+
+        else:
+            video = MP4(str(file_path))
+
+            if not video.info or not video.info.length:
+                raise ValueError("Could not read the video duration.")
+
+            if video.info.length > 120:
+                raise ValueError("Videos must not exceed 2 minutes.")
+
+            media_type = "video"
+
+        with connect() as con:
+            con.execute("""
+                INSERT INTO portfolio_items (
+                    provider_id,
+                    media_type,
+                    filename,
+                    title,
+                    description
+                )
+                VALUES (?, ?, ?, ?, ?)
+            """, (
+                provider["id"],
+                media_type,
+                filename,
+                title,
+                description
+            ))
+
+    except Exception as error:
+        file_path.unlink(missing_ok=True)
+
+        if isinstance(error, ValueError):
+            flash(str(error), "error")
+        else:
+            flash("The file could not be validated. Please try another file.", "error")
+
+        return redirect(url_for("provider_dashboard"))
+
+    flash("Portfolio item uploaded successfully.", "success")
+    return redirect(url_for("provider_dashboard"))
+
+
+@app.route("/provider/portfolio/<int:item_id>/delete", methods=["POST"])
+@login_required
+def delete_portfolio_item(item_id):
+    role_required("provider")
+
+    with connect() as con:
+        provider = con.execute("""
+            SELECT id
+            FROM providers
+            WHERE user_id = ?
+        """, (current_user.id,)).fetchone()
+
+        if not provider:
+            abort(404)
+
+        item = con.execute("""
+            SELECT *
+            FROM portfolio_items
+            WHERE id = ? AND provider_id = ?
+        """, (item_id, provider["id"])).fetchone()
+
+        if not item:
+            abort(404)
+
+        con.execute("""
+            DELETE FROM portfolio_items
+            WHERE id = ? AND provider_id = ?
+        """, (item_id, provider["id"]))
+
+    filename = Path(item["filename"]).name
+    file_path = PORTFOLIO_UPLOAD_FOLDER / filename
+    file_path.unlink(missing_ok=True)
+
+    flash("Portfolio item deleted.", "success")
+    return redirect(url_for("provider_dashboard"))
+
+
+@app.route("/portfolio-media/<filename>")
+def portfolio_media(filename):
+    safe_filename = Path(filename).name
+
+    with connect() as con:
+        item = con.execute("""
+            SELECT id
+            FROM portfolio_items
+            WHERE filename = ?
+        """, (safe_filename,)).fetchone()
+
+    if not item:
+        abort(404)
+
+    return send_from_directory(
+        app.config["PORTFOLIO_UPLOAD_FOLDER"],
+        safe_filename
+    )
+
+
+
+
+@app.route("/provider/<int:provider_id>")
+def public_provider(provider_id):
+    with connect() as con:
+        provider = con.execute("""
+            SELECT *
+            FROM providers
+            WHERE id = ?
+        """, (provider_id,)).fetchone()
+
+        if not provider:
+            abort(404)
+
+        categories = con.execute("""
+            SELECT categories.name
+            FROM categories
+            JOIN provider_categories
+              ON categories.id = provider_categories.category_id
+            WHERE provider_categories.provider_id = ?
+            ORDER BY categories.name
+        """, (provider_id,)).fetchall()
+
+        services = con.execute("""
+            SELECT
+                services.*,
+                categories.name AS category_name
+            FROM services
+            JOIN categories
+              ON services.category_id = categories.id
+            WHERE services.provider_id = ?
+              AND services.is_active = 1
+            ORDER BY services.created_at DESC
+        """, (provider_id,)).fetchall()
+
+        portfolio_items = con.execute("""
+            SELECT *
+            FROM portfolio_items
+            WHERE provider_id = ?
+            ORDER BY created_at DESC
+        """, (provider_id,)).fetchall()
+
+    return render_template(
+        "provider_public.html",
+        provider=provider,
+        categories=categories,
+        services=services,
+        portfolio_items=portfolio_items
+    )
+
+@app.route("/provider-dashboard")
+@login_required
+def provider_dashboard():
+    role_required("provider")
+
+    with connect() as con:
+        provider = con.execute("""
+            SELECT *
+            FROM providers
+            WHERE user_id = ?
+        """, (current_user.id,)).fetchone()
+
+        if not provider:
+            abort(404)
+
+        categories = con.execute("""
+            SELECT categories.id, categories.name
+            FROM categories
+            JOIN provider_categories
+              ON categories.id = provider_categories.category_id
+            WHERE provider_categories.provider_id = ?
+            ORDER BY categories.name
+        """, (provider["id"],)).fetchall()
+        service_categories = con.execute("""
+            SELECT categories.id, categories.name
+            FROM categories
+            JOIN provider_categories
+              ON categories.id = provider_categories.category_id
+            WHERE provider_categories.provider_id = ?
+              AND categories.slug != 'costume-rentals'
+            ORDER BY categories.name
+        """, (provider["id"],)).fetchall()
+        services = con.execute("""
+            SELECT
+                services.*,
+                categories.name AS category_name
+            FROM services
+            JOIN categories
+              ON services.category_id = categories.id
+            WHERE services.provider_id = ?
+            ORDER BY services.created_at DESC
+        """, (provider["id"],)).fetchall()
+
+        portfolio_items = con.execute("""
+            SELECT *
+            FROM portfolio_items
+            WHERE provider_id = ?
+            ORDER BY created_at DESC
+        """, (provider["id"],)).fetchall()
+
+        notifications = con.execute("""
+            SELECT *
+            FROM notifications
+            WHERE user_id = ?
+            ORDER BY created_at DESC
+            LIMIT 20
+        """, (current_user.id,)).fetchall()
+
+        unread_count = con.execute("""
+            SELECT COUNT(*)
+            FROM notifications
+            WHERE user_id = ? AND is_read = 0
+        """, (current_user.id,)).fetchone()[0]
+
+
+        return render_template(
+                "provider_dashboard.html",
+                        provider=provider,
+                categories=categories,
+                service_categories=service_categories,
+                services=services,
+                portfolio_items=portfolio_items,
+                notifications=notifications,
+                unread_count=unread_count
+    )
+@app.route("/notifications/read", methods=["POST"])
+@login_required
+def mark_notifications_read():
+    with connect() as con:
+        con.execute("""
+            UPDATE notifications
+            SET is_read = 1
+            WHERE user_id = ?
+        """, (current_user.id,))
+
+    flash("Notifications marked as read.", "success")
+
+    if current_user.role == "photographer":
+        return redirect(url_for("dashboard"))
+
+    return redirect(url_for("provider_dashboard"))
 @app.route("/booking/<int:booking_id>/status", methods=["POST"])
 @login_required
 def booking_status(booking_id):
