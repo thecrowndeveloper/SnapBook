@@ -316,7 +316,8 @@ def init_db():
             ("Photo Framing", "photo-framing"),
             ("Interior Design", "interior-design"),
             ("Costume Rentals", "costume-rentals"),
-            ("Media Equipment", "media-equipment")
+            ("Media Equipment", "media-equipment"),
+            ("Spaces & Studios", "spaces-studios")
         ]
 
         con.executemany("""
