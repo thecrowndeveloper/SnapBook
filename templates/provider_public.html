@@ -53,6 +53,28 @@
                     {% endif %}
 
                     <p>Request method: {{ service.booking_mode|title }}</p>
+
+                    {% if current_user.is_authenticated and current_user.role == 'client' %}
+                        <form method="POST"
+                              action="{{ url_for('request_service', service_id=service.id) }}"
+                              class="booking-form">
+                            <input type="hidden" name="csrf_token"
+                                   value="{{ csrf_token() }}">
+                            <label>Preferred date
+                                <input type="date" name="requested_date" required>
+                            </label>
+                            <label>Message to the creative professional
+                                <textarea name="client_message" rows="3"
+                                          maxlength="2000"
+                                          placeholder="Share your requirements..."></textarea>
+                            </label>
+                            <button type="submit" class="btn btn-primary">
+                                Send service request
+                            </button>
+                        </form>
+                    {% elif not current_user.is_authenticated %}
+                        <p><a href="{{ url_for('login', next=request.path) }}">Log in as a client</a> to request this service.</p>
+                    {% endif %}
                 </div>
                 <hr>
             {% endfor %}
