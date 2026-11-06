@@ -405,28 +405,60 @@ def role_required(role):
 def home():
     city = request.args.get("city", "").strip()
     specialty = request.args.get("specialty", "").strip()
+    category_slug = request.args.get("category", "").strip()
 
-    query = "SELECT * FROM photographers WHERE 1=1"
-    args = []
+    photographer_query = "SELECT * FROM photographers WHERE 1=1"
+    photographer_args = []
 
     if city:
-        query += " AND city LIKE ?"
-        args.append(f"%{city}%")
+        photographer_query += " AND city LIKE ?"
+        photographer_args.append(f"%{city}%")
 
     if specialty:
-        query += " AND specialty LIKE ?"
-        args.append(f"%{specialty}%")
+        photographer_query += " AND specialty LIKE ?"
+        photographer_args.append(f"%{specialty}%")
+
+    provider_query = """
+        SELECT DISTINCT providers.*, GROUP_CONCAT(categories.name, ', ')
+            AS category_names
+        FROM providers
+        JOIN provider_categories
+            ON provider_categories.provider_id = providers.id
+        JOIN categories
+            ON categories.id = provider_categories.category_id
+        WHERE 1=1
+    """
+    provider_args = []
+
+    if city:
+        provider_query += " AND providers.city LIKE ?"
+        provider_args.append(f"%{city}%")
+
+    if category_slug:
+        provider_query += " AND categories.slug = ?"
+        provider_args.append(category_slug)
+
+    provider_query += " GROUP BY providers.id ORDER BY providers.id DESC"
 
     with connect() as con:
         photographers = con.execute(
-            query + " ORDER BY id DESC", args
+            photographer_query + " ORDER BY id DESC", photographer_args
+        ).fetchall()
+        creative_professionals = con.execute(
+            provider_query, provider_args
+        ).fetchall()
+        categories = con.execute(
+            "SELECT id, name, slug FROM categories ORDER BY name"
         ).fetchall()
 
     return render_template(
         "index.html",
         photographers=photographers,
+        creative_professionals=creative_professionals,
+        categories=categories,
         city=city,
-        specialty=specialty
+        specialty=specialty,
+        category_slug=category_slug
     )
 
 
