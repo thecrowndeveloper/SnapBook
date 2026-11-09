@@ -2070,3 +2070,15 @@ p, li, label, input, select, textarea, button, .muted,
   font-size: max(14px, 1em);
 }
 .eyebrow { font-size: 12px; }
+
+
+/* Readability-only adjustment: preserve existing fonts, colours and component styling. */
+body { font-size: 16px; }
+p, li, label, input, select, textarea, button, small,
+.muted, .notice, .back, .tag, .price, .specialty, .bio,
+.text-link, .public-profile-owner, .public-profile-location,
+.public-profile-bio, .public-profile-nav a, .public-service-category,
+.public-service-mode, .public-service-description, .public-service-link,
+.public-portfolio-caption p, .public-empty-state p, .public-profile-bottom a {
+  font-size: max(14px, 1em);
+}
