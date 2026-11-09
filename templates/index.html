@@ -17,7 +17,7 @@
   </div>
 
   <div class="hero-visual hero-photo-wrap">
-    <img class="hero-main" src="https://images.unsplash.com/photo-1542038784456-1ea8e935640e?auto=format&fit=crop&w=1400&q=85" alt="Creative professional capturing a moment">
+    <img class="hero-main" src="{{ url_for('static', filename='images/photo1.jpg') }}" alt="Creative professional capturing a moment">
     <svg class="hero-camera" viewBox="0 0 560 390" role="img" aria-label="Subtle camera illustration">
       <g transform="translate(42 58)" fill="none" stroke="#f4e8d1" stroke-linejoin="round">
         <path d="M105 76 142 31h105l34 45" stroke-width="9"/>
@@ -65,19 +65,19 @@
   </div>
   <div class="marketplace-categories">
     <a class="marketplace-category photography-category" href="{{ url_for('home', category='photography') }}">
-      <img src="https://images.unsplash.com/photo-1542038784456-1ea8e935640e?auto=format&fit=crop&w=900&q=85" alt="" loading="lazy">
+      <img src="{{ url_for('static', filename='images/photo2.jpg') }}" alt="" loading="lazy">
       <span class="marketplace-number">01 / CREATE</span><b>Photography</b><small>Portraits, events, products and more</small><i>Explore category ↗</i>
     </a>
     <a class="marketplace-category videography-category" href="{{ url_for('home', category='videography') }}">
-      <img src="https://images.unsplash.com/photo-1492619375914-88005aa9e8fb?auto=format&fit=crop&w=900&q=85" alt="" loading="lazy">
+      <img src="{{ url_for('static', filename='images/photo6.jpg') }}" alt="" loading="lazy">
       <span class="marketplace-number">02 / TELL STORIES</span><b>Videography</b><small>Films, events, reels and production</small><i>Explore category ↗</i>
     </a>
     <a class="marketplace-category equipment-category" href="{{ url_for('home', category='media-equipment') }}">
-      <img src="https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=900&q=85" alt="" loading="lazy">
+      <img src="{{ url_for('static', filename='images/photo5.jpg') }}" alt="" loading="lazy">
       <span class="marketplace-number">03 / GET EQUIPPED</span><b>Equipment sales & rentals</b><small>Find the gear your project needs</small><i>Explore category ↗</i>
     </a>
     <a class="marketplace-category spaces-category" href="{{ url_for('home', category='spaces-studios') }}">
-      <img src="https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=900&q=85" alt="" loading="lazy">
+      <img src="{{ url_for('static', filename='images/photo4.jpg') }}" alt="" loading="lazy">
       <span class="marketplace-number">04 / FIND YOUR SPACE</span><b>Spaces & studios</b><small>Studios, event and content spaces</small><i>Explore category ↗</i>
     </a>
   </div>
@@ -89,18 +89,18 @@
     <p class="muted">Find the right photographer for the milestones you want to remember.</p>
   </div>
   <div class="occasion-grid">
-    <a class="occasion-card wedding-card" href="{{ url_for('home', specialty='Wedding Photography') }}">
-      <img src="https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1100&q=85" alt="Wedding couple celebrating together" loading="lazy">
+    <a class="occasion-card wedding-card" href="#directory">
+      <img src="{{ url_for('static', filename='images/photo7.jpg') }}" alt="Wedding couple celebrating together" loading="lazy">
       <span>CELEBRATE YOUR STORY</span><b>Wedding photography</b><i>Find a wedding photographer ↗</i>
     </a>
-    <a class="occasion-card graduation-card" href="{{ url_for('home', specialty='Graduation Portraits') }}">
-      <img src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=1100&q=85" alt="Graduates celebrating their achievement" loading="lazy">
+    <a class="occasion-card graduation-card" href="#directory">
+      <img src="{{ url_for('static', filename='images/photo3.jpg') }}" alt="Graduates celebrating their achievement" loading="lazy">
       <span>MARK THE MILESTONE</span><b>Graduation portraits</b><i>Find a portrait photographer ↗</i>
     </a>
   </div>
 </section>
 
-<section class="section directory-section">
+<section class="section directory-section" id="directory">
   <div class="section-head">
     <div><p class="eyebrow">THE CREATIVE DIRECTORY</p><h2>Meet creative professionals</h2></div>
     <p class="muted">Browse creative talent, compare services and find your fit.</p>
