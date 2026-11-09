@@ -16,14 +16,14 @@
   <div class="workspace-grid" style="margin-top:24px">
     <section class="workspace-card workspace-card-wide">
       <h2>Edit your public profile</h2>
-      <form method="POST" action="{{ url_for('update_provider_profile') }}" class="booking-form">
+      <form method="POST" action="{{ url_for('update_provider_profile') }}" enctype="multipart/form-data" class="booking-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <label>Display name<input name="display_name" maxlength="100" value="{{ provider.display_name }}" required></label>
         <label>Business name<input name="business_name" maxlength="120" value="{{ provider.business_name or '' }}" placeholder="Optional business name"></label>
         <label>Location<input name="city" maxlength="100" value="{{ provider.city }}" required></label>
         <label>Biography<textarea name="bio" rows="4" maxlength="1500" required>{{ provider.bio }}</textarea></label>
-        <label>Profile picture URL<input type="url" name="profile_image" value="{{ provider.profile_image or '' }}" placeholder="https://..."></label>
-        <p class="muted">Use a secure HTTPS image address. Changes appear on your public profile.</p>
+        <label>Upload profile picture<input type="file" name="profile_picture" accept=".jpg,.jpeg,.png,.webp"></label>
+        <p class="muted">JPG, PNG or WEBP. Leave this empty to keep your current profile picture.</p>
         <button class="btn dark" type="submit">Save profile changes</button>
       </form>
     </section>
