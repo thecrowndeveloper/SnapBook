@@ -1129,6 +1129,29 @@ def update_provider_profile():
     bio = request.form.get("bio", "").strip()
     city = request.form.get("city", "").strip()
     profile_image = request.form.get("profile_image", "").strip()
+    profile_picture = request.files.get("profile_picture")
+    new_picture_path = None
+
+    if profile_picture and profile_picture.filename:
+        suffix = Path(secure_filename(profile_picture.filename)).suffix.lower()
+        if suffix not in {".jpg", ".jpeg", ".png", ".webp"}:
+            flash("Profile pictures must be JPG, PNG or WEBP.", "error")
+            return redirect(url_for("provider_dashboard"))
+        filename = "profile-" + uuid4().hex + suffix
+        new_picture_path = PORTFOLIO_UPLOAD_FOLDER / filename
+        profile_picture.save(new_picture_path)
+        with new_picture_path.open("rb") as image_file:
+            signature = image_file.read(12)
+        valid = (
+            (suffix in {".jpg", ".jpeg"} and signature.startswith(b"\\xff\\xd8\\xff"))
+            or (suffix == ".png" and signature.startswith(b"\\x89PNG\\r\\n\\x1a\\n"))
+            or (suffix == ".webp" and signature[:4] == b"RIFF" and signature[8:12] == b"WEBP")
+        )
+        if not valid:
+            new_picture_path.unlink(missing_ok=True)
+            flash("The selected profile picture is not a valid image.", "error")
+            return redirect(url_for("provider_dashboard"))
+        profile_image = "/profile-media/" + filename
 
     if not display_name or not city or not bio:
         flash("Your name, location and biography are required.", "error")
@@ -1142,10 +1165,12 @@ def update_provider_profile():
 
     with connect() as con:
         provider = con.execute(
-            "SELECT id FROM providers WHERE user_id = ?", (current_user.id,)
+            "SELECT id, profile_image FROM providers WHERE user_id = ?", (current_user.id,)
         ).fetchone()
         if not provider:
             abort(404)
+        if not profile_image:
+            profile_image = provider["profile_image"] or ""
         con.execute("""
             UPDATE providers
             SET display_name = ?, business_name = ?, bio = ?,
@@ -1455,6 +1480,20 @@ def portfolio_media(filename):
     )
 
 
+
+
+@app.route("/profile-media/<filename>")
+def profile_media(filename):
+    safe_filename = Path(filename).name
+    expected_path = "/profile-media/" + safe_filename
+    with connect() as con:
+        exists = con.execute(
+            "SELECT id FROM providers WHERE profile_image = ?",
+            (expected_path,)
+        ).fetchone()
+    if not exists:
+        abort(404)
+    return send_from_directory(app.config["PORTFOLIO_UPLOAD_FOLDER"], safe_filename)
 
 
 @app.route("/provider/<int:provider_id>")
