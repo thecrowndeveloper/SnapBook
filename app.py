@@ -554,6 +554,31 @@ def home():
         creative_professionals = con.execute(
             provider_query, provider_args
         ).fetchall()
+
+        service_query = """
+            SELECT services.id, services.title, services.description,
+                   services.pricing_mode, services.price,
+                   categories.name AS category_name,
+                   providers.id AS provider_id,
+                   providers.display_name, providers.business_name,
+                   providers.city, providers.profile_image
+            FROM services
+            JOIN categories ON categories.id = services.category_id
+            JOIN providers ON providers.id = services.provider_id
+            WHERE services.is_active = 1
+        """
+        service_args = []
+        if city:
+            service_query += " AND providers.city LIKE ?"
+            service_args.append(f"%{city}%")
+        if category_slug:
+            service_query += " AND categories.slug = ?"
+            service_args.append(category_slug)
+        service_query += " ORDER BY services.created_at DESC LIMIT 24"
+        marketplace_services = con.execute(
+            service_query, service_args
+        ).fetchall()
+
         categories = con.execute(
             "SELECT id, name, slug FROM categories ORDER BY name"
         ).fetchall()
@@ -562,6 +587,7 @@ def home():
         "index.html",
         photographers=photographers,
         creative_professionals=creative_professionals,
+        marketplace_services=marketplace_services,
         categories=categories,
         locations=NIGERIAN_LOCATIONS,
         city=city,
