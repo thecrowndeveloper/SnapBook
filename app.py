@@ -100,9 +100,12 @@ NIGERIAN_LOCATIONS = [
 
 
 def connect():
-    con = sqlite3.connect(DB)
+    # Give concurrent requests time to wait for a write instead of failing
+    # immediately when another request briefly holds SQLite's write lock.
+    con = sqlite3.connect(DB, timeout=30)
     con.row_factory = sqlite3.Row
     con.execute("PRAGMA foreign_keys = ON")
+    con.execute("PRAGMA busy_timeout = 30000")
     return con
 
 
@@ -192,6 +195,11 @@ def migrate_user_roles(con):
 
 def init_db():
     with connect() as con:
+        # WAL allows readers to continue while a request writes to the database.
+        # Keep one Railway replica while SQLite is the active database.
+        con.execute("PRAGMA journal_mode = WAL")
+        con.execute("PRAGMA synchronous = NORMAL")
+
         con.execute("""
             CREATE TABLE IF NOT EXISTS photographers (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
