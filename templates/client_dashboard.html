@@ -8,6 +8,35 @@
     <h1>My bookings</h1>
     <p class="muted">Welcome, {{ current_user.name }}. Track your photography requests here.</p>
 
+    <div class="auth-card">
+        <h2>Marketplace service requests</h2>
+        {% if marketplace_bookings %}
+            {% for booking in marketplace_bookings %}
+                <div>
+                    <h3>{{ booking.service_title }}</h3>
+                    <p><strong>Creative professional:</strong>
+                        {{ booking.business_name or booking.professional_name }}</p>
+                    <p><strong>Preferred date:</strong> {{ booking.requested_date }}</p>
+                    <p><strong>Status:</strong> {{ booking.status }}</p>
+                    {% if booking.status == 'Awaiting Client Confirmation' %}
+                        <form method="POST"
+                              action="{{ url_for('marketplace_booking_status', booking_id=booking.id) }}">
+                            <input type="hidden" name="csrf_token"
+                                   value="{{ csrf_token() }}">
+                            <input type="hidden" name="status" value="Completed">
+                            <button type="submit" class="btn btn-primary">
+                                Confirm work completed
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+                <hr>
+            {% endfor %}
+        {% else %}
+            <p class="muted">You have no marketplace service requests yet.</p>
+        {% endif %}
+    </div>
+
     {% if bookings %}
     <div class="table-wrap">
         <table>

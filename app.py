@@ -56,11 +56,56 @@ DEFAULT_IMAGE = (
     "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=900"
 )
 
+# Nigerian state capitals and the Federal Capital Territory.
+# The search field also accepts other cities and towns.
+NIGERIAN_LOCATIONS = [
+    ("Abia", "Umuahia"),
+    ("Adamawa", "Yola"),
+    ("Akwa Ibom", "Uyo"),
+    ("Anambra", "Awka"),
+    ("Bauchi", "Bauchi"),
+    ("Bayelsa", "Yenagoa"),
+    ("Benue", "Makurdi"),
+    ("Borno", "Maiduguri"),
+    ("Cross River", "Calabar"),
+    ("Delta", "Asaba"),
+    ("Ebonyi", "Abakaliki"),
+    ("Edo", "Benin City"),
+    ("Ekiti", "Ado-Ekiti"),
+    ("Enugu", "Enugu"),
+    ("Gombe", "Gombe"),
+    ("Imo", "Owerri"),
+    ("Jigawa", "Dutse"),
+    ("Kaduna", "Kaduna"),
+    ("Kano", "Kano"),
+    ("Katsina", "Katsina"),
+    ("Kebbi", "Birnin Kebbi"),
+    ("Kogi", "Lokoja"),
+    ("Kwara", "Ilorin"),
+    ("Lagos", "Ikeja"),
+    ("Nasarawa", "Lafia"),
+    ("Niger", "Minna"),
+    ("Ogun", "Abeokuta"),
+    ("Ondo", "Akure"),
+    ("Osun", "Osogbo"),
+    ("Oyo", "Ibadan"),
+    ("Plateau", "Jos"),
+    ("Rivers", "Port Harcourt"),
+    ("Sokoto", "Sokoto"),
+    ("Taraba", "Jalingo"),
+    ("Yobe", "Damaturu"),
+    ("Zamfara", "Gusau"),
+    ("FCT", "Abuja"),
+]
+
 
 def connect():
-    con = sqlite3.connect(DB)
+    # Give concurrent requests time to wait for a write instead of failing
+    # immediately when another request briefly holds SQLite's write lock.
+    con = sqlite3.connect(DB, timeout=30)
     con.row_factory = sqlite3.Row
     con.execute("PRAGMA foreign_keys = ON")
+    con.execute("PRAGMA busy_timeout = 30000")
     return con
 
 
@@ -150,6 +195,11 @@ def migrate_user_roles(con):
 
 def init_db():
     with connect() as con:
+        # WAL allows readers to continue while a request writes to the database.
+        # Keep one Railway replica while SQLite is the active database.
+        con.execute("PRAGMA journal_mode = WAL")
+        con.execute("PRAGMA synchronous = NORMAL")
+
         con.execute("""
             CREATE TABLE IF NOT EXISTS photographers (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -250,6 +300,40 @@ def init_db():
             )
         """)
 
+        # Marketplace service bookings and enquiries.
+        # Payment and review fields will be added only after gateway verification
+        # and a confirmed completion workflow are implemented.
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS marketplace_bookings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                service_id INTEGER NOT NULL,
+                provider_id INTEGER NOT NULL,
+                client_user_id INTEGER NOT NULL,
+                requested_date TEXT NOT NULL,
+                client_message TEXT DEFAULT '',
+                status TEXT NOT NULL DEFAULT 'Requested'
+                    CHECK(status IN (
+                        'Requested', 'Accepted', 'In Progress',
+                        'Awaiting Client Confirmation', 'Completed',
+                        'Cancelled'
+                    )),
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(service_id) REFERENCES services(id),
+                FOREIGN KEY(provider_id) REFERENCES providers(id),
+                FOREIGN KEY(client_user_id) REFERENCES users(id)
+            )
+        """)
+
+        con.execute("""
+            CREATE INDEX IF NOT EXISTS idx_marketplace_bookings_client
+            ON marketplace_bookings(client_user_id)
+        """)
+        con.execute("""
+            CREATE INDEX IF NOT EXISTS idx_marketplace_bookings_provider
+            ON marketplace_bookings(provider_id)
+        """)
+
         # Artwork for sale and costumes for rent
         con.execute("""
             CREATE TABLE IF NOT EXISTS products (
@@ -316,7 +400,8 @@ def init_db():
             ("Photo Framing", "photo-framing"),
             ("Interior Design", "interior-design"),
             ("Costume Rentals", "costume-rentals"),
-            ("Media Equipment", "media-equipment")
+            ("Media Equipment", "media-equipment"),
+            ("Spaces & Studios", "spaces-studios")
         ]
 
         con.executemany("""
@@ -324,6 +409,29 @@ def init_db():
             VALUES (?, ?)
         """, categories)
 
+
+        # Index frequently filtered and sorted marketplace records.
+        # These indexes are safe to create on existing databases.
+        con.execute("""
+            CREATE INDEX IF NOT EXISTS idx_photographers_city
+            ON photographers(city)
+        """)
+        con.execute("""
+            CREATE INDEX IF NOT EXISTS idx_bookings_photographer_status
+            ON bookings(photographer_id, status)
+        """)
+        con.execute("""
+            CREATE INDEX IF NOT EXISTS idx_services_provider_active_created
+            ON services(provider_id, is_active, created_at)
+        """)
+        con.execute("""
+            CREATE INDEX IF NOT EXISTS idx_notifications_user_created
+            ON notifications(user_id, created_at)
+        """)
+        con.execute("""
+            CREATE INDEX IF NOT EXISTS idx_providers_city
+            ON providers(city)
+        """)
 
         # Add account ownership to existing records without deleting them.
         add_column_if_missing(
@@ -404,28 +512,61 @@ def role_required(role):
 def home():
     city = request.args.get("city", "").strip()
     specialty = request.args.get("specialty", "").strip()
+    category_slug = request.args.get("category", "").strip()
 
-    query = "SELECT * FROM photographers WHERE 1=1"
-    args = []
+    photographer_query = "SELECT * FROM photographers WHERE 1=1"
+    photographer_args = []
 
     if city:
-        query += " AND city LIKE ?"
-        args.append(f"%{city}%")
+        photographer_query += " AND city LIKE ?"
+        photographer_args.append(f"%{city}%")
 
     if specialty:
-        query += " AND specialty LIKE ?"
-        args.append(f"%{specialty}%")
+        photographer_query += " AND specialty LIKE ?"
+        photographer_args.append(f"%{specialty}%")
+
+    provider_query = """
+        SELECT DISTINCT providers.*, GROUP_CONCAT(categories.name, ', ')
+            AS category_names
+        FROM providers
+        JOIN provider_categories
+            ON provider_categories.provider_id = providers.id
+        JOIN categories
+            ON categories.id = provider_categories.category_id
+        WHERE 1=1
+    """
+    provider_args = []
+
+    if city:
+        provider_query += " AND providers.city LIKE ?"
+        provider_args.append(f"%{city}%")
+
+    if category_slug:
+        provider_query += " AND categories.slug = ?"
+        provider_args.append(category_slug)
+
+    provider_query += " GROUP BY providers.id ORDER BY providers.id DESC"
 
     with connect() as con:
         photographers = con.execute(
-            query + " ORDER BY id DESC", args
+            photographer_query + " ORDER BY id DESC", photographer_args
+        ).fetchall()
+        creative_professionals = con.execute(
+            provider_query, provider_args
+        ).fetchall()
+        categories = con.execute(
+            "SELECT id, name, slug FROM categories ORDER BY name"
         ).fetchall()
 
     return render_template(
         "index.html",
         photographers=photographers,
+        creative_professionals=creative_professionals,
+        categories=categories,
+        locations=NIGERIAN_LOCATIONS,
         city=city,
-        specialty=specialty
+        specialty=specialty,
+        category_slug=category_slug
     )
 
 
@@ -778,7 +919,26 @@ def my_bookings():
             ORDER BY bookings.id DESC
         """, (current_user.id,)).fetchall()
 
-    return render_template("client_dashboard.html", bookings=bookings)
+        marketplace_bookings = con.execute("""
+            SELECT
+                marketplace_bookings.*,
+                providers.display_name AS professional_name,
+                providers.business_name,
+                services.title AS service_title
+            FROM marketplace_bookings
+            JOIN providers
+              ON providers.id = marketplace_bookings.provider_id
+            JOIN services
+              ON services.id = marketplace_bookings.service_id
+            WHERE marketplace_bookings.client_user_id = ?
+            ORDER BY marketplace_bookings.created_at DESC
+        """, (current_user.id,)).fetchall()
+
+    return render_template(
+        "client_dashboard.html",
+        bookings=bookings,
+        marketplace_bookings=marketplace_bookings
+    )
 
 
 @app.route("/dashboard")
@@ -913,6 +1073,137 @@ def create_service():
     return redirect(url_for("provider_dashboard"))
 
 
+
+
+@app.route("/service/<int:service_id>/request", methods=["POST"])
+@login_required
+def request_service(service_id):
+    role_required("client")
+
+    requested_date = request.form.get("requested_date", "").strip()
+    client_message = request.form.get("client_message", "").strip()
+
+    if not requested_date:
+        flash("Please select your preferred service date.", "error")
+        return redirect(request.referrer or url_for("home"))
+
+    if len(client_message) > 2000:
+        flash("Your message must not exceed 2,000 characters.", "error")
+        return redirect(request.referrer or url_for("home"))
+
+    with connect() as con:
+        service = con.execute("""
+            SELECT services.id, services.provider_id, services.booking_mode,
+                   providers.user_id, services.title
+            FROM services
+            JOIN providers ON providers.id = services.provider_id
+            WHERE services.id = ?
+              AND services.is_active = 1
+        """, (service_id,)).fetchone()
+
+        if not service:
+            abort(404)
+
+        if service["user_id"] == current_user.id:
+            flash("You cannot request your own service.", "error")
+            return redirect(url_for(
+                "public_provider", provider_id=service["provider_id"]
+            ))
+
+        existing = con.execute("""
+            SELECT id
+            FROM marketplace_bookings
+            WHERE service_id = ?
+              AND client_user_id = ?
+              AND status NOT IN ('Cancelled', 'Completed')
+        """, (service_id, current_user.id)).fetchone()
+
+        if existing:
+            flash("You already have an active request for this service.", "info")
+            return redirect(url_for(
+                "public_provider", provider_id=service["provider_id"]
+            ))
+
+        booking = con.execute("""
+            INSERT INTO marketplace_bookings (
+                service_id, provider_id, client_user_id,
+                requested_date, client_message
+            )
+            VALUES (?, ?, ?, ?, ?)
+        """, (
+            service_id, service["provider_id"], current_user.id,
+            requested_date, client_message
+        ))
+
+        if service["user_id"]:
+            con.execute("""
+                INSERT INTO notifications (
+                    user_id, title, message, notification_type, related_id
+                )
+                VALUES (?, ?, ?, ?, ?)
+            """, (
+                service["user_id"],
+                "New service request",
+                f"{current_user.name} requested {service['title']} for {requested_date}.",
+                "marketplace_booking",
+                booking.lastrowid
+            ))
+
+    flash("Your service request has been sent to the creative professional.", "success")
+    return redirect(url_for("my_bookings"))
+
+
+@app.route("/marketplace-booking/<int:booking_id>/status", methods=["POST"])
+@login_required
+def marketplace_booking_status(booking_id):
+    status = request.form.get("status", "")
+
+    with connect() as con:
+        booking = con.execute("""
+            SELECT *
+            FROM marketplace_bookings
+            WHERE id = ?
+        """, (booking_id,)).fetchone()
+
+        if not booking:
+            abort(404)
+
+        if current_user.role == "provider":
+            provider = con.execute("""
+                SELECT id FROM providers WHERE user_id = ?
+            """, (current_user.id,)).fetchone()
+
+            if not provider or provider["id"] != booking["provider_id"]:
+                abort(404)
+
+            allowed = {
+                "Requested": ("Accepted", "Cancelled"),
+                "Accepted": ("In Progress", "Cancelled"),
+                "In Progress": ("Awaiting Client Confirmation",)
+            }
+
+            if status not in allowed.get(booking["status"], ()):
+                abort(400)
+
+        elif current_user.role == "client":
+            if booking["client_user_id"] != current_user.id:
+                abort(404)
+
+            if booking["status"] != "Awaiting Client Confirmation" or status != "Completed":
+                abort(400)
+        else:
+            abort(403)
+
+        con.execute("""
+            UPDATE marketplace_bookings
+            SET status = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        """, (status, booking_id))
+
+    flash("Booking status updated.", "success")
+    if current_user.role == "provider":
+        return redirect(url_for("provider_dashboard"))
+    return redirect(url_for("my_bookings"))
 
 
 @app.route("/provider/portfolio/upload", methods=["POST"])
@@ -1182,6 +1473,21 @@ def provider_dashboard():
             ORDER BY created_at DESC
         """, (provider["id"],)).fetchall()
 
+        marketplace_bookings = con.execute("""
+            SELECT
+                marketplace_bookings.*,
+                users.name AS client_name,
+                users.email AS client_email,
+                services.title AS service_title
+            FROM marketplace_bookings
+            JOIN users
+              ON users.id = marketplace_bookings.client_user_id
+            JOIN services
+              ON services.id = marketplace_bookings.service_id
+            WHERE marketplace_bookings.provider_id = ?
+            ORDER BY marketplace_bookings.created_at DESC
+        """, (provider["id"],)).fetchall()
+
         notifications = con.execute("""
             SELECT *
             FROM notifications
@@ -1204,6 +1510,7 @@ def provider_dashboard():
                 service_categories=service_categories,
                 services=services,
                 portfolio_items=portfolio_items,
+                marketplace_bookings=marketplace_bookings,
                 notifications=notifications,
                 unread_count=unread_count
     )

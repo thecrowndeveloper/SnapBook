@@ -1,11 +1,11 @@
 
 {% extends "base.html" %}
-{% block title %}Provider dashboard | SnapBook{% endblock %}
+{% block title %}Creative Professional dashboard | OneCre8 Media{% endblock %}
 
 {% block content %}
 <section class="section dashboard">
 
-    <p class="eyebrow">PROVIDER WORKSPACE</p>
+    <p class="eyebrow">CREATIVE PROFESSIONAL WORKSPACE</p>
 
     <h1>Welcome, {{ provider.display_name }}</h1>
 
@@ -140,6 +140,46 @@
             <p class="muted">
                 You have not selected any service categories.
             </p>
+        {% endif %}
+    </div>
+
+    <div class="auth-card">
+        <h2>Marketplace booking requests</h2>
+        <p class="muted">
+            Review incoming requests and update their progress. Clients confirm completion.
+        </p>
+        {% if marketplace_bookings %}
+            {% for booking in marketplace_bookings %}
+                <div>
+                    <h3>{{ booking.service_title }}</h3>
+                    <p><strong>Client:</strong> {{ booking.client_name }} ({{ booking.client_email }})</p>
+                    <p><strong>Preferred date:</strong> {{ booking.requested_date }}</p>
+                    <p><strong>Message:</strong> {{ booking.client_message or 'No additional message.' }}</p>
+                    <p><strong>Status:</strong> {{ booking.status }}</p>
+
+                    {% set next_status = {
+                        'Requested': ['Accepted', 'Cancelled'],
+                        'Accepted': ['In Progress', 'Cancelled'],
+                        'In Progress': ['Awaiting Client Confirmation']
+                    } %}
+                    {% if next_status.get(booking.status) %}
+                        <form method="POST"
+                              action="{{ url_for('marketplace_booking_status', booking_id=booking.id) }}">
+                            <input type="hidden" name="csrf_token"
+                                   value="{{ csrf_token() }}">
+                            <select name="status" required>
+                                {% for option in next_status[booking.status] %}
+                                    <option value="{{ option }}">{{ option }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="mini-btn">Update status</button>
+                        </form>
+                    {% endif %}
+                </div>
+                <hr>
+            {% endfor %}
+        {% else %}
+            <p class="muted">No marketplace requests yet.</p>
         {% endif %}
     </div>
 

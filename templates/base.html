@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#171715">
-  <meta name="description" content="Discover talented photographers across Nigeria. Explore portfolios, compare prices and book your next photoshoot with SnapBook.">
-  <title>{% block title %}SnapBook{% endblock %} | Photography, booked simply</title>
+  <meta name="description" content="Discover and book photographers, videographers, creative services, equipment and spaces across Nigeria with OneCre8 Media.">
+  <title>{% block title %}OneCre8 Media{% endblock %} | Creative services, connected</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,7 +16,7 @@
 <body>
 
 <header class="topbar">
-  <a class="logo" href="{{ url_for('home') }}">snap<span>book</span><i>.</i></a>
+  <a class="logo" href="{{ url_for('home') }}">OneCre8<i>.</i></a>
 
  <nav>
     <a href="{{ url_for('home') }}">Explore</a>
@@ -25,7 +25,7 @@
                 {% if current_user.role == 'photographer' %}
             <a href="{{ url_for('dashboard') }}">My dashboard</a>
         {% elif current_user.role == 'provider' %}
-            <a href="{{ url_for('provider_dashboard') }}">Provider dashboard</a>
+            <a href="{{ url_for('provider_dashboard') }}">Creative Professional dashboard</a>
         {% else %}
             <a href="{{ url_for('my_bookings') }}">My bookings</a>
         {% endif %}
@@ -54,9 +54,9 @@
 </main>
 
 <footer>
-  <a class="footer-logo" href="{{ url_for('home') }}">snapbook<i>.</i></a>
-  <span>Made for your moments, wherever they happen.</span>
-  <span>© 2026 SnapBook · Nigeria</span>
+  <a class="footer-logo" href="{{ url_for('home') }}">OneCre8<i>.</i></a>
+  <span>One marketplace for every creative need.</span>
+  <span>© 2026 OneCre8 Media · Nigeria</span>
 </footer>
 
 <script src="{{ url_for('static', filename='app.js') }}"></script>
