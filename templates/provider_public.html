@@ -8,6 +8,7 @@
     <p class="eyebrow">CREATIVE PROFESSIONAL</p>
 
     <div class="auth-card">
+        {% if provider.profile_image %}<img class="workspace-profile-image" src="{{ provider.profile_image }}" alt="{{ provider.display_name }} profile picture">{% endif %}
         <h1>{{ provider.business_name or provider.display_name }}</h1>
 
         {% if provider.business_name %}
