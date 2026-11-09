@@ -1878,3 +1878,101 @@ small,
   .occasion-card { min-height: 290px; }
   .photographer-card .card-image { aspect-ratio: 4 / 4.3; }
 }
+
+
+/* ONECRE8 HOMEPAGE FOLLOW-UP: clean imagery, card affordance and aligned search */
+.hero-camera {
+  display: none !important;
+}
+
+.marketplace-category,
+.occasion-card {
+  cursor: pointer;
+}
+
+/* Keep the same image framing on desktop, tablet and mobile. */
+.marketplace-category {
+  min-height: 0;
+  aspect-ratio: 4 / 5;
+}
+.marketplace-category img {
+  object-fit: cover;
+  object-position: center center;
+}
+.occasion-card {
+  min-height: 0;
+  aspect-ratio: 16 / 9;
+}
+.occasion-card img {
+  object-fit: cover;
+  object-position: center center;
+}
+.photographer-card .card-image {
+  height: auto;
+  aspect-ratio: 4 / 4.7;
+  overflow: hidden;
+}
+.photographer-card .card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 22%;
+}
+
+/* Remove decorative arrow affordances; the whole card remains the link. */
+.marketplace-category i,
+.occasion-card i {
+  font-style: normal;
+}
+.marketplace-category i::after,
+.occasion-card i::after,
+.text-link span {
+  display: none !important;
+}
+
+/* Align both search controls and the submit action on one shared row. */
+.marketplace-search {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: stretch;
+}
+.marketplace-search .search-field {
+  min-height: 68px;
+  height: 68px;
+  justify-content: center;
+}
+.marketplace-search .search-submit {
+  height: 68px;
+  min-height: 68px;
+  align-self: stretch;
+  margin: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 700px) {
+  .marketplace-category {
+    aspect-ratio: 4 / 5;
+    min-height: 0;
+  }
+  .occasion-card {
+    aspect-ratio: 16 / 9;
+    min-height: 0;
+  }
+  .photographer-card .card-image {
+    aspect-ratio: 4 / 4.7;
+  }
+  .marketplace-search {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+  .marketplace-search .search-field {
+    height: auto;
+    min-height: 62px;
+  }
+  .marketplace-search .search-submit {
+    height: 54px;
+    min-height: 54px;
+    margin-top: 8px !important;
+  }
+}
