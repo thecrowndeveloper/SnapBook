@@ -1636,3 +1636,245 @@ small,
   .marketplace-category small { font-size: 10px; }
   .camera-caption { left: 14px; bottom: 13px; font-size: 7px; }
 }
+
+
+/* ONECRE8 HOMEPAGE VISUAL REFINEMENT */
+.hero {
+  background: #171715;
+  grid-template-columns: .92fr 1.08fr;
+  min-height: 620px;
+  padding-bottom: 38px;
+}
+.hero-copy { padding-right: 5%; z-index: 2; }
+.hero-photo-wrap {
+  min-height: 500px;
+  margin: 42px 0 12px 12px;
+  overflow: hidden;
+  isolation: isolate;
+  background: #292720;
+}
+.hero-photo-wrap::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(23,23,21,.28), rgba(23,23,21,.02) 55%, rgba(23,23,21,.12));
+  z-index: 1;
+  pointer-events: none;
+}
+.hero-main {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 500px;
+  max-height: none;
+  object-fit: cover;
+  object-position: center 35%;
+  filter: saturate(.82) contrast(.98);
+}
+.hero-camera {
+  position: absolute;
+  z-index: 2;
+  width: min(92%, 570px);
+  height: auto;
+  left: 4%;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: .16;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+.hero-photo-caption {
+  position: absolute;
+  z-index: 3;
+  left: 22px;
+  bottom: 20px;
+  color: rgba(255,255,255,.78);
+  font: 700 9px 'Manrope', sans-serif;
+  letter-spacing: 1.6px;
+}
+.hero-proof { margin-top: 34px; }
+.search-band {
+  display: block;
+  padding: 28px 8%;
+  background: #f8f7f3;
+}
+.marketplace-search {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 0;
+  align-items: stretch;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 9px;
+  background: #fff;
+  border: 1px solid #e5dfd3;
+  box-shadow: 0 12px 35px rgba(33,28,19,.08);
+}
+.search-field {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 7px 22px;
+}
+.search-field + .search-field { border-left: 1px solid #e8e4dc; }
+.search-field > span {
+  color: #8a7558;
+  font: 800 9px 'Manrope', sans-serif;
+  letter-spacing: 1.5px;
+}
+.search-field input,
+.search-field select {
+  width: 100%;
+  height: 35px;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #24211d;
+  font: 600 14px 'Manrope', sans-serif;
+}
+.search-field input:focus,
+.search-field select:focus { outline: 0; }
+.search-submit {
+  min-width: 220px;
+  border-radius: 3px;
+  gap: 10px;
+  background: #171715;
+  color: #fff;
+  font-size: 13px;
+  padding: 0 24px;
+}
+.search-submit span { font-size: 23px; line-height: 1; }
+.marketplace-categories {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 17px;
+}
+.marketplace-category {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 310px;
+  overflow: hidden;
+  padding: 22px;
+  color: #fff !important;
+  background: #34312a;
+  isolation: isolate;
+}
+.marketplace-category::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(15,14,12,.04) 10%, rgba(15,14,12,.78) 100%);
+}
+.marketplace-category img {
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform .45s ease;
+  filter: saturate(.78);
+}
+.marketplace-category:hover img { transform: scale(1.045); }
+.marketplace-number {
+  position: absolute;
+  top: 19px;
+  left: 20px;
+  color: #f0d5a4;
+  font: 800 9px 'Manrope', sans-serif;
+  letter-spacing: 1.4px;
+}
+.marketplace-category b {
+  font: 700 22px 'Manrope', sans-serif;
+  line-height: 1.2;
+  margin-bottom: 7px;
+}
+.marketplace-category small { color: rgba(255,255,255,.84); font-size: 12px; }
+.marketplace-category i {
+  margin-top: 17px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,.3);
+  color: #e3bd7e;
+  font: normal 700 11px 'Manrope', sans-serif;
+}
+.occasion-section { background: #fff; }
+.occasion-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.occasion-card {
+  position: relative;
+  display: flex;
+  min-height: 340px;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+  padding: 28px;
+  color: #fff !important;
+  background: #3b342a;
+  isolation: isolate;
+}
+.occasion-card::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,.02) 20%, rgba(0,0,0,.72) 100%);
+}
+.occasion-card img {
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform .45s ease;
+}
+.occasion-card:hover img { transform: scale(1.035); }
+.occasion-card span { font: 800 9px 'Manrope', sans-serif; letter-spacing: 1.5px; color: #f0d5a4; }
+.occasion-card b { margin: 8px 0; font: 700 29px 'Manrope', sans-serif; }
+.occasion-card i { font: normal 600 12px 'Manrope', sans-serif; color: #f0d5a4; }
+.photographer-cards { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.photographer-card { overflow: hidden; border-radius: 3px; }
+.photographer-card .card-image {
+  height: auto;
+  aspect-ratio: 4 / 4.7;
+  overflow: hidden;
+  background: #e7e1d7;
+}
+.photographer-card .card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 22%;
+}
+.photographer-card .card-body { min-height: 230px; }
+.photographer-card .card-top { flex-wrap: wrap; }
+.photographer-card .bio { min-height: 64px; }
+.creative-professional-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.marketplace-search .btn { margin: 0; }
+@media (max-width: 1050px) {
+  .marketplace-categories { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .photographer-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hero { grid-template-columns: 1fr 1fr; }
+  .hero-photo-wrap { min-height: 430px; }
+  .hero-main { min-height: 430px; }
+}
+@media (max-width: 700px) {
+  .hero { grid-template-columns: 1fr; padding-bottom: 42px; }
+  .hero-photo-wrap { min-height: 310px; margin: 0 0 20px; }
+  .hero-main { min-height: 310px; }
+  .hero-camera { width: 96%; left: 2%; }
+  .search-band { padding: 22px 5%; }
+  .marketplace-search { grid-template-columns: 1fr; gap: 0; padding: 8px; }
+  .search-field { padding: 11px 12px; }
+  .search-field + .search-field { border-left: 0; border-top: 1px solid #e8e4dc; }
+  .search-submit { width: 100%; min-height: 50px; margin-top: 8px !important; }
+  .marketplace-categories, .occasion-grid, .photographer-cards, .creative-professional-cards { grid-template-columns: 1fr; }
+  .marketplace-category { min-height: 270px; }
+  .occasion-card { min-height: 290px; }
+  .photographer-card .card-image { aspect-ratio: 4 / 4.3; }
+}
