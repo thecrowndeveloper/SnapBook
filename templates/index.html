@@ -97,6 +97,26 @@
   {% if city or specialty or category_slug %}
     <div class="filter-state">Showing results {% if city %}in <strong>{{ city }}</strong>{% endif %}{% if category_slug %}in <strong>{{ category_slug|replace("-", " ")|title }}</strong>{% elif specialty %}for <strong>{{ specialty }}</strong>{% endif %} · <a href="{{ url_for('home') }}">Clear filters</a></div>
   {% endif %}
+  {% if marketplace_services %}
+    <div class="section-head" style="margin-top:34px">
+      <div><p class="eyebrow">AVAILABLE RIGHT NOW</p><h2>Explore services</h2></div>
+      <p class="muted">Open a service to see its details and send a request.</p>
+    </div>
+    <div class="cards creative-professional-cards">
+      {% for service in marketplace_services %}
+        <article class="photographer-card">
+          <div class="card-body">
+            <div class="card-top"><span class="tag">{{ service.category_name }}</span><span class="tag">{{ service.city }}</span></div>
+            <h3><a href="{{ url_for('service_detail', service_id=service.id) }}">{{ service.title }}</a></h3>
+            <p class="specialty">{{ service.business_name or service.display_name }}</p>
+            <p class="bio">{{ service.description or 'View service details and contact this creative professional through OneCre8.' }}</p>
+            {% if service.pricing_mode == 'fixed' %}<p class="price">₦{{ "{:,.0f}".format(service.price or 0) }}{% else %}<p class="price">Custom quote{% endif %}</p>
+            <a class="text-link" href="{{ url_for('service_detail', service_id=service.id) }}">View service details</a>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  {% endif %}
   {% if creative_professionals %}
     <div class="cards creative-professional-cards">
       {% for professional in creative_professionals %}
