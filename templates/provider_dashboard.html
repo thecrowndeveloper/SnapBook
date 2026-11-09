@@ -1,309 +1,98 @@
-
 {% extends "base.html" %}
-{% block title %}Creative Professional dashboard | OneCre8 Media{% endblock %}
-
+{% block title %}Creative Professional workspace | OneCre8 Media{% endblock %}
 {% block content %}
 <section class="section dashboard">
-
-    <p class="eyebrow">CREATIVE PROFESSIONAL WORKSPACE</p>
-
-    <h1>Welcome, {{ provider.display_name }}</h1>
-
-    <p class="muted">
-        Manage your creative business and marketplace offerings.
-    </p>
-        <div class="auth-card">
-        <h2>
-            Notifications
-            {% if unread_count %}
-                ({{ unread_count }} new)
-            {% endif %}
-        </h2>
-
-        {% if notifications %}
-            {% for notification in notifications %}
-                <div class="{% if not notification.is_read %}unread{% endif %}">
-                    <strong>{{ notification.title }}</strong>
-                    <p>{{ notification.message }}</p>
-                    <small>{{ notification.created_at }}</small>
-                </div>
-                <hr>
-            {% endfor %}
-
-            {% if unread_count %}
-                <form method="POST"
-                      action="{{ url_for('mark_notifications_read') }}">
-                    <input type="hidden" name="csrf_token"
-                           value="{{ csrf_token() }}">
-                    <button type="submit" class="mini-btn">
-                        Mark all as read
-                    </button>
-                </form>
-            {% endif %}
-        {% else %}
-            <p class="muted">You have no notifications yet.</p>
-        {% endif %}
-    </div>
-
-    <div class="auth-card">
-        <h2>Your business profile</h2>
-
-        {% if provider.business_name %}
-            <p><strong>Business name:</strong> {{ provider.business_name }}</p>
-        {% endif %}
-
-        <p><strong>Location:</strong> {{ provider.city }}</p>
-
-        <p><strong>About:</strong></p>
-        <p>{{ provider.bio }}</p>
-
-        <p>
-            <a href="{{ url_for('public_provider', provider_id=provider.id) }}"
-               target="_blank" rel="noopener">
-                View your public portfolio and services
-            </a>
-        </p>
-    </div>
-
-    <div class="auth-card">
-        <h2>Your service categories</h2>
-
-        {% if categories %}
-            <ul>
-                {% for category in categories %}
-                    <li>{{ category.name }}</li>
-                {% endfor %}
-            </ul>
-        {% else %}
-            <p class="muted">No categories selected yet.</p>
-        {% endif %}
-    </div>
-
-       <div class="auth-card">
-        <h2>Publish a new service</h2>
-
-        {% if service_categories %}
-            <form method="POST"
-                  action="{{ url_for('create_service') }}"
-                  class="booking-form">
-
-                <input type="hidden" name="csrf_token"
-                       value="{{ csrf_token() }}">
-
-                <label>Service category
-                    <select name="category_id" required>
-                        <option value="">Choose a category</option>
-                        {% for category in service_categories %}
-                            <option value="{{ category.id }}">
-                                {{ category.name }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </label>
-
-                <label>Service title
-                    <input type="text" name="title"
-                           placeholder="e.g. Wedding photography"
-                           required>
-                </label>
-
-                <label>Description
-                    <textarea name="description" rows="4"
-                              placeholder="Describe the service..."></textarea>
-                </label>
-
-                <label>Pricing method
-                    <select name="pricing_mode" required>
-                        <option value="fixed">Fixed price</option>
-                        <option value="quote">Custom quote</option>
-                    </select>
-                </label>
-
-                <label>Price (required for fixed pricing)
-                    <input type="number" name="price"
-                           min="0.01" step="0.01"
-                           placeholder="Enter price">
-                </label>
-
-                <label>Customer request method
-                    <select name="booking_mode" required>
-                        <option value="booking">Direct booking</option>
-                        <option value="enquiry">Enquiry</option>
-                    </select>
-                </label>
-
-                <button type="submit" class="btn btn-primary">
-                    Publish service
-                </button>
-            </form>
-        {% else %}
-            <p class="muted">
-                You have not selected any service categories.
-            </p>
-        {% endif %}
-    </div>
-
-    <div class="auth-card">
-        <h2>Marketplace booking requests</h2>
-        <p class="muted">
-            Review incoming requests and update their progress. Clients confirm completion.
-        </p>
-        {% if marketplace_bookings %}
-            {% for booking in marketplace_bookings %}
-                <div>
-                    <h3>{{ booking.service_title }}</h3>
-                    <p><strong>Client:</strong> {{ booking.client_name }} ({{ booking.client_email }})</p>
-                    <p><strong>Preferred date:</strong> {{ booking.requested_date }}</p>
-                    <p><strong>Message:</strong> {{ booking.client_message or 'No additional message.' }}</p>
-                    <p><strong>Status:</strong> {{ booking.status }}</p>
-
-                    {% set next_status = {
-                        'Requested': ['Accepted', 'Cancelled'],
-                        'Accepted': ['In Progress', 'Cancelled'],
-                        'In Progress': ['Awaiting Client Confirmation']
-                    } %}
-                    {% if next_status.get(booking.status) %}
-                        <form method="POST"
-                              action="{{ url_for('marketplace_booking_status', booking_id=booking.id) }}">
-                            <input type="hidden" name="csrf_token"
-                                   value="{{ csrf_token() }}">
-                            <select name="status" required>
-                                {% for option in next_status[booking.status] %}
-                                    <option value="{{ option }}">{{ option }}</option>
-                                {% endfor %}
-                            </select>
-                            <button type="submit" class="mini-btn">Update status</button>
-                        </form>
-                    {% endif %}
-                </div>
-                <hr>
-            {% endfor %}
-        {% else %}
-            <p class="muted">No marketplace requests yet.</p>
-        {% endif %}
-    </div>
-
-    <div class="auth-card">
-        <h2>Your published services</h2>
-
-        {% if services %}
-            {% for service in services %}
-                <div>
-                    <h3>{{ service.title }}</h3>
-
-                    <p class="muted">
-                        {{ service.category_name }}
-                    </p>
-
-                    <p>{{ service.description }}</p>
-
-                    {% if service.pricing_mode == 'fixed' %}
-                        <p>Price: {{ "%.2f"|format(service.price) }}</p>
-                    {% else %}
-                        <p>Custom quote</p>
-                    {% endif %}
-
-                    <p>
-                        Request method:
-                        {{ service.booking_mode|title }}
-                    </p>
-                </div>
-                <hr>
-            {% endfor %}
-        {% else %}
-            <p class="muted">
-                You have not published any services yet.
-            </p>
-        {% endif %}
-    </div>
-
-    <div class="auth-card">
-        <h2>Your creative portfolio</h2>
-        <p class="muted">
-            Showcase your previous work so clients can see your style
-            before booking you.
-        </p>
-
-        <form method="POST"
-              action="{{ url_for('upload_portfolio') }}"
-              enctype="multipart/form-data"
-              class="booking-form">
-
-            <input type="hidden" name="csrf_token"
-                   value="{{ csrf_token() }}">
-
-            <label>Work title
-                <input type="text" name="title"
-                       placeholder="e.g. Wedding highlights"
-                       maxlength="150" required>
-            </label>
-
-            <label>Description
-                <textarea name="description" rows="3"
-                          maxlength="1000"
-                          placeholder="Tell clients about this work..."></textarea>
-            </label>
-
-            <label>Choose an image or MP4 video
-                <input type="file" name="media"
-                       accept=".jpg,.jpeg,.png,.webp,.mp4"
-                       required>
-            </label>
-
-            <p class="muted">
-                Images: JPG, PNG or WEBP. Videos: MP4, maximum 2 minutes.
-            </p>
-
-            <button type="submit" class="btn btn-primary">
-                Upload portfolio item
-            </button>
-        </form>
-    </div>
-
-    <div class="auth-card">
-        <h2>Your portfolio items</h2>
-
-        {% if portfolio_items %}
-            {% for item in portfolio_items %}
-                <div class="portfolio-item">
-                    <h3>{{ item.title }}</h3>
-
-                    {% if item.media_type == 'image' %}
-                        <img
-                            src="{{ url_for('portfolio_media', filename=item.filename) }}"
-                            alt="{{ item.title }}"
-                            style="max-width: 100%; height: auto;">
-                    {% else %}
-                        <video controls preload="metadata"
-                               style="max-width: 100%; height: auto;">
-                            <source
-                                src="{{ url_for('portfolio_media', filename=item.filename) }}"
-                                type="video/mp4">
-                            Your browser does not support video playback.
-                        </video>
-                    {% endif %}
-
-                    {% if item.description %}
-                        <p>{{ item.description }}</p>
-                    {% endif %}
-
-                    <form method="POST"
-                          action="{{ url_for('delete_portfolio_item', item_id=item.id) }}">
-                        <input type="hidden" name="csrf_token"
-                               value="{{ csrf_token() }}">
-                        <button type="submit" class="mini-btn">
-                            Delete item
-                        </button>
-                    </form>
-                </div>
-                <hr>
-            {% endfor %}
-        {% else %}
-            <p class="muted">
-                You have not added any portfolio items yet.
-            </p>
-        {% endif %}
-    </div>
-
+  <div class="workspace-hero">
+    <div><p class="eyebrow">YOUR CREATIVE BUSINESS</p><h1>Welcome, {{ provider.display_name }}</h1>
+      <p class="muted">Manage your profile, services, portfolio and client requests in one place.</p></div>
+    <a class="btn dark" href="{{ url_for('public_provider', provider_id=provider.id) }}" target="_blank" rel="noopener">Preview public page ↗</a>
+  </div>
+  <div class="workspace-stat">
+    <span><strong>{{ services|length }}</strong> services</span>
+    <span><strong>{{ portfolio_items|length }}</strong> portfolio items</span>
+    <span><strong>{{ marketplace_bookings|length }}</strong> booking requests</span>
+    <span><strong>{{ unread_count }}</strong> unread notifications</span>
+  </div>
+  <div class="workspace-grid" style="margin-top:24px">
+    <section class="workspace-card workspace-card-wide">
+      <h2>Edit your public profile</h2>
+      <form method="POST" action="{{ url_for('update_provider_profile') }}" class="booking-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>Display name<input name="display_name" maxlength="100" value="{{ provider.display_name }}" required></label>
+        <label>Business name<input name="business_name" maxlength="120" value="{{ provider.business_name or '' }}" placeholder="Optional business name"></label>
+        <label>Location<input name="city" maxlength="100" value="{{ provider.city }}" required></label>
+        <label>Biography<textarea name="bio" rows="4" maxlength="1500" required>{{ provider.bio }}</textarea></label>
+        <label>Profile picture URL<input type="url" name="profile_image" value="{{ provider.profile_image or '' }}" placeholder="https://..."></label>
+        <p class="muted">Use a secure HTTPS image address. Changes appear on your public profile.</p>
+        <button class="btn dark" type="submit">Save profile changes</button>
+      </form>
+    </section>
+    <section class="workspace-card">
+      <h2>Notifications {% if unread_count %}<small>({{ unread_count }} new)</small>{% endif %}</h2>
+      {% for notification in notifications %}
+        <div class="{% if not notification.is_read %}unread{% endif %}"><strong>{{ notification.title }}</strong><p>{{ notification.message }}</p><small>{{ notification.created_at }}</small></div><hr>
+      {% else %}<p class="muted">No notifications yet.</p>{% endfor %}
+      {% if unread_count %}<form method="POST" action="{{ url_for('mark_notifications_read') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="mini-btn" type="submit">Mark all as read</button></form>{% endif %}
+    </section>
+    <section class="workspace-card">
+      <h2>Your categories</h2>
+      {% for category in categories %}<span class="tag">{{ category.name }}</span> {% else %}<p class="muted">No categories selected.</p>{% endfor %}
+      <p class="muted">Your selected categories help clients discover your work.</p>
+    </section>
+    <section class="workspace-card workspace-card-wide">
+      <h2>Publish a service</h2>
+      {% if service_categories %}
+      <form method="POST" action="{{ url_for('create_service') }}" class="booking-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>Category<select name="category_id" required><option value="">Choose category</option>{% for category in service_categories %}<option value="{{ category.id }}">{{ category.name }}</option>{% endfor %}</select></label>
+        <label>Service title<input name="title" maxlength="150" required placeholder="e.g. Wedding photography"></label>
+        <label>Description<textarea name="description" rows="3" maxlength="2000"></textarea></label>
+        <div class="two"><label>Pricing<select name="pricing_mode" required><option value="fixed">Fixed price</option><option value="quote">Custom quote</option></select></label><label>Price in Naira<input type="number" name="price" min="1" step="1" placeholder="e.g. 75000"></label></div>
+        <label>Request method<select name="booking_mode" required><option value="booking">Booking request</option><option value="enquiry">Enquiry</option></select></label>
+        <button class="btn dark" type="submit">Publish service</button>
+      </form>
+      {% else %}<p class="muted">No service categories are available on your profile yet.</p>{% endif %}
+    </section>
+    <section class="workspace-card workspace-card-wide">
+      <h2>Manage your services</h2>
+      {% for service in services %}
+        <div class="service-listing"><h3><a href="{{ url_for('service_detail', service_id=service.id) }}">{{ service.title }}</a></h3>
+          <p class="muted">{{ service.category_name }} · {% if service.pricing_mode == 'fixed' %}₦{{ "{:,.0f}".format(service.price or 0) }}{% else %}Custom quote{% endif %}</p>
+          <p>{{ service.description }}</p><span class="tag">{{ 'Published' if service.is_active else 'Paused' }}</span>
+        </div>
+      {% else %}<p class="muted">You have not published a service yet.</p>{% endfor %}
+    </section>
+    <section class="workspace-card workspace-card-wide">
+      <h2>Upload to your portfolio</h2>
+      <form method="POST" action="{{ url_for('upload_portfolio') }}" enctype="multipart/form-data" class="booking-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>Work title<input name="title" maxlength="150" required></label>
+        <label>Description<textarea name="description" rows="3" maxlength="1000"></textarea></label>
+        <label>Image or MP4 video<input type="file" name="media" accept=".jpg,.jpeg,.png,.webp,.mp4" required></label>
+        <p class="muted">JPG, PNG, WEBP or MP4. Videos must be no longer than 2 minutes.</p>
+        <button class="btn dark" type="submit">Upload portfolio item</button>
+      </form>
+      <div class="workspace-grid" style="margin-top:20px">
+        {% for item in portfolio_items %}
+          <article class="workspace-card"><h3>{{ item.title }}</h3>
+            {% if item.media_type == 'image' %}<img src="{{ url_for('portfolio_media', filename=item.filename) }}" alt="{{ item.title }}" style="width:100%;max-height:280px;object-fit:cover">
+            {% else %}<video controls preload="metadata" style="width:100%;max-height:280px"><source src="{{ url_for('portfolio_media', filename=item.filename) }}" type="video/mp4"></video>{% endif %}
+            <p>{{ item.description }}</p>
+            <form method="POST" action="{{ url_for('delete_portfolio_item', item_id=item.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="mini-btn" type="submit">Delete item</button></form>
+          </article>
+        {% else %}<p class="muted">Your portfolio is waiting for its first project.</p>{% endfor %}
+      </div>
+    </section>
+    <section class="workspace-card workspace-card-wide">
+      <h2>Booking requests</h2>
+      {% for booking in marketplace_bookings %}
+        <div class="service-listing"><h3>{{ booking.service_title }}</h3><p><strong>Client:</strong> {{ booking.client_name }}</p>
+          <p><strong>Preferred date:</strong> {{ booking.requested_date }}</p><p>{{ booking.client_message or 'No additional message.' }}</p><p><strong>Status:</strong> {{ booking.status }}</p>
+          {% set next_status = {'Requested':['Accepted','Cancelled'],'Accepted':['In Progress','Cancelled'],'In Progress':['Awaiting Client Confirmation']} %}
+          {% if next_status.get(booking.status) %}<form method="POST" action="{{ url_for('marketplace_booking_status', booking_id=booking.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><select name="status">{% for option in next_status[booking.status] %}<option value="{{ option }}">{{ option }}</option>{% endfor %}</select><button class="mini-btn" type="submit">Update status</button></form>{% endif %}
+        </div>
+      {% else %}<p class="muted">No marketplace booking requests yet.</p>{% endfor %}
+    </section>
+  </div>
 </section>
 {% endblock %}
