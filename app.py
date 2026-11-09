@@ -1159,7 +1159,7 @@ def update_provider_profile():
     if len(display_name) > 100 or len(business_name) > 120 or len(bio) > 1500 or len(city) > 100:
         flash("Please shorten one or more profile fields.", "error")
         return redirect(url_for("provider_dashboard"))
-    if profile_image and not profile_image.startswith("https://"):
+    if profile_image and not (profile_image.startswith("https://") or profile_image.startswith("/profile-media/")):
         flash("Profile image must be a secure HTTPS image address.", "error")
         return redirect(url_for("provider_dashboard"))
 
