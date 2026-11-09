@@ -1075,6 +1075,62 @@ def create_service():
 
 
 
+
+@app.route("/service/<int:service_id>")
+def service_detail(service_id):
+    with connect() as con:
+        service = con.execute("""
+            SELECT services.*, categories.name AS category_name,
+                   providers.id AS provider_id,
+                   providers.display_name, providers.business_name,
+                   providers.city, providers.bio, providers.profile_image
+            FROM services
+            JOIN categories ON categories.id = services.category_id
+            JOIN providers ON providers.id = services.provider_id
+            WHERE services.id = ? AND services.is_active = 1
+        """, (service_id,)).fetchone()
+    if not service:
+        abort(404)
+    return render_template("service_detail.html", service=service)
+
+
+@app.route("/provider/profile/update", methods=["POST"])
+@login_required
+def update_provider_profile():
+    role_required("provider")
+    display_name = request.form.get("display_name", "").strip()
+    business_name = request.form.get("business_name", "").strip()
+    bio = request.form.get("bio", "").strip()
+    city = request.form.get("city", "").strip()
+    profile_image = request.form.get("profile_image", "").strip()
+
+    if not display_name or not city or not bio:
+        flash("Your name, location and biography are required.", "error")
+        return redirect(url_for("provider_dashboard"))
+    if len(display_name) > 100 or len(business_name) > 120 or len(bio) > 1500 or len(city) > 100:
+        flash("Please shorten one or more profile fields.", "error")
+        return redirect(url_for("provider_dashboard"))
+    if profile_image and not profile_image.startswith("https://"):
+        flash("Profile image must be a secure HTTPS image address.", "error")
+        return redirect(url_for("provider_dashboard"))
+
+    with connect() as con:
+        provider = con.execute(
+            "SELECT id FROM providers WHERE user_id = ?", (current_user.id,)
+        ).fetchone()
+        if not provider:
+            abort(404)
+        con.execute("""
+            UPDATE providers
+            SET display_name = ?, business_name = ?, bio = ?,
+                city = ?, profile_image = ?
+            WHERE id = ?
+        """, (display_name, business_name, bio, city, profile_image, provider["id"]))
+        con.execute("UPDATE users SET name = ? WHERE id = ?", (display_name, current_user.id))
+    flash("Your Creative Professional profile has been updated.", "success")
+    return redirect(url_for("provider_dashboard"))
+
+
 @app.route("/service/<int:service_id>/request", methods=["POST"])
 @login_required
 def request_service(service_id):
