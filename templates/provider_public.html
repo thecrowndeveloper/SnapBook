@@ -37,7 +37,7 @@
         {% if services %}
             {% for service in services %}
                 <div>
-                    <h3>{{ service.title }}</h3>
+                    <h3><a href="{{ url_for('service_detail', service_id=service.id) }}">{{ service.title }}</a></h3>
                     <p class="muted">{{ service.category_name }}</p>
 
                     {% if service.description %}
