@@ -2058,21 +2058,15 @@ small,
 }
 
 
-/* OneCre8 global typography system: one typeface and readable text sizes. */
-html, body, body * {
-  font-family: 'Manrope', sans-serif !important;
-}
-body {
-  font-size: 16px;
-  line-height: 1.65;
-}
-p, li, label, input, select, textarea, button, a, small, summary,
-.eyebrow, .muted, .tag, .price, .specialty, .text-link,
-.public-profile-owner, .public-profile-location, .public-profile-nav a,
-.public-service-category, .public-service-mode, .public-service-description,
-.public-service-link, .public-portfolio-caption p, .public-empty-state p,
+
+/* Readability adjustment only: preserve existing fonts, colours and layout. */
+body { font-size: 17px; }
+p, li, label, input, select, textarea, button, .muted,
+.public-profile-owner, .public-profile-location,
+.public-profile-nav a, .public-service-category, .public-service-mode,
+.public-service-description, .public-service-link,
+.public-portfolio-caption p, .public-empty-state p,
 .public-profile-bottom a {
-  font-size: max(14px, 1em) !important;
-  line-height: 1.55;
+  font-size: max(14px, 1em);
 }
-.page-nav { display: none !important; }
+.eyebrow { font-size: 12px; }
