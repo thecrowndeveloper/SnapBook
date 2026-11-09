@@ -53,7 +53,7 @@
   {% block content %}{% endblock %}
 </main>
 
-<button class="page-nav" id="page-nav" type="button" aria-label="Back to top" title="Back to top">↑</button>
+{% if request.endpoint != "public_provider" %}<button class="page-nav" id="page-nav" type="button" aria-label="Back to top" title="Back to top">↑</button>{% endif %}
 
 <footer>
   <a class="footer-logo" href="{{ url_for('home') }}">OneCre8<i>.</i></a>
