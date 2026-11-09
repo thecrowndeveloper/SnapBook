@@ -1143,8 +1143,8 @@ def update_provider_profile():
         with new_picture_path.open("rb") as image_file:
             signature = image_file.read(12)
         valid = (
-            (suffix in {".jpg", ".jpeg"} and signature.startswith(b"\\xff\\xd8\\xff"))
-            or (suffix == ".png" and signature.startswith(b"\\x89PNG\\r\\n\\x1a\\n"))
+            (suffix in {".jpg", ".jpeg"} and signature.startswith(b"\xff\xd8\xff"))
+            or (suffix == ".png" and signature.startswith(b"\x89PNG\r\n\x1a\n"))
             or (suffix == ".webp" and signature[:4] == b"RIFF" and signature[8:12] == b"WEBP")
         )
         if not valid:
