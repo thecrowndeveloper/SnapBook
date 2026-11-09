@@ -410,6 +410,29 @@ def init_db():
         """, categories)
 
 
+        # Index frequently filtered and sorted marketplace records.
+        # These indexes are safe to create on existing databases.
+        con.execute("""
+            CREATE INDEX IF NOT EXISTS idx_photographers_city
+            ON photographers(city)
+        """)
+        con.execute("""
+            CREATE INDEX IF NOT EXISTS idx_bookings_photographer_status
+            ON bookings(photographer_id, status)
+        """)
+        con.execute("""
+            CREATE INDEX IF NOT EXISTS idx_services_provider_active_created
+            ON services(provider_id, is_active, created_at)
+        """)
+        con.execute("""
+            CREATE INDEX IF NOT EXISTS idx_notifications_user_created
+            ON notifications(user_id, created_at)
+        """)
+        con.execute("""
+            CREATE INDEX IF NOT EXISTS idx_providers_city
+            ON providers(city)
+        """)
+
         # Add account ownership to existing records without deleting them.
         add_column_if_missing(
             con, "photographers", "user_id",
