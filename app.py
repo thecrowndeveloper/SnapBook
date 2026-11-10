@@ -584,7 +584,7 @@ def account_token_serializer():
 
 
 def reserve_account_email(recipient, event_type, limit=3, window_minutes=60):
-    """Limit account-security email sends to three per recipient per hour."""
+    """Limit account-security email sends to three per recipient per hour; hash addresses at rest."""
     recipient_hash = hashlib.sha256(
         recipient.strip().lower().encode("utf-8")
     ).hexdigest()
