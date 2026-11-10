@@ -40,6 +40,7 @@ jobs:
           import os
           from pathlib import Path
           import sqlite3
+          from unittest.mock import patch
           import app as onecre8
 
           onecre8.app.config.update(TESTING=True, WTF_CSRF_ENABLED=False)
@@ -146,6 +147,29 @@ jobs:
           assert onecre8.reserve_account_email("rate-limit@example.test", "verification")
           assert onecre8.reserve_account_email("rate-limit@example.test", "verification")
           assert not onecre8.reserve_account_email("rate-limit@example.test", "verification")
+
+          # Verify Resend-compatible STARTTLS SMTP wiring without network access.
+          smtp_environment = {
+              "SMTP_HOST": "smtp.resend.com",
+              "SMTP_PORT": "587",
+              "SMTP_USERNAME": "resend",
+              "SMTP_PASSWORD": "ci-only-placeholder-secret",
+              "MAIL_FROM": "OneCre8 CI <ci@example.test>",
+          }
+          with patch.dict(os.environ, smtp_environment):
+              with patch("app.smtplib.SMTP") as smtp_class:
+                  smtp_connection = smtp_class.return_value.__enter__.return_value
+                  sent = onecre8.send_account_email(
+                      "smtp-test@example.test",
+                      "OneCre8 SMTP integration test",
+                      "This is a mocked SMTP test.",
+                      "smtp_ci"
+                  )
+                  assert sent is True
+                  smtp_class.assert_called_once_with("smtp.resend.com", 587, timeout=15)
+                  smtp_connection.starttls.assert_called_once()
+                  smtp_connection.login.assert_called_once_with("resend", "ci-only-placeholder-secret")
+                  smtp_connection.send_message.assert_called_once()
 
           assert onecre8.LAUNCH_POLICY["payments_enabled"] is False
           assert onecre8.LAUNCH_POLICY["commission_rate"] == 0.10
