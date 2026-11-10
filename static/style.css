@@ -2082,3 +2082,29 @@ p, li, label, input, select, textarea, button, small,
 .public-portfolio-caption p, .public-empty-state p, .public-profile-bottom a {
   font-size: max(14px, 1em);
 }
+
+
+/* Public profile readability fix: retain existing typefaces, colours and layout. */
+.public-profile-page p,
+.public-profile-page li,
+.public-profile-page a,
+.public-profile-page label,
+.public-profile-page input,
+.public-profile-page select,
+.public-profile-page textarea,
+.public-profile-page button,
+.public-profile-page small,
+.public-profile-page span,
+.public-profile-page .public-profile-owner,
+.public-profile-page .public-profile-location,
+.public-profile-page .public-profile-bio,
+.public-profile-page .public-service-category,
+.public-profile-page .public-service-mode,
+.public-profile-page .public-service-description,
+.public-profile-page .public-service-link,
+.public-profile-page .public-portfolio-caption p,
+.public-profile-page .public-empty-state p,
+.public-profile-page .public-profile-bottom a {
+  font-size: max(14px, 1em) !important;
+}
+.public-profile-page .eyebrow { font-size: 12px !important; }
