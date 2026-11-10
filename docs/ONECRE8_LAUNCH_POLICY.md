@@ -106,3 +106,6 @@ If SMTP is not configured or delivery fails, account creation will not silently 
 ## CI verification
 
 A GitHub Actions workflow was added at `.github/workflows/onecre8-auth-checks.yml`. It compiles the Flask application and smoke-tests the registration pages, legal pages, legal acceptance records, verification gate, email verification, password login and one-time password-reset behavior. A successful workflow run must be checked before the pull request is approved.
+
+
+Account verification and password-reset emails are limited to three messages per recipient and message type per hour. Password-reset requests use a generic response to reduce account-enumeration risk. Configure provider-level abuse protection and monitor delivery failures before launch.
