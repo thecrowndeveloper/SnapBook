@@ -10,14 +10,21 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='quietluxury2') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='onecre8-no-dashed-placeholders2') }}">
 </head>
 <body>
 
 <header class="topbar">
   <a class="logo" href="{{ url_for('home') }}">OneCre8<i>.</i></a>
 
- <nav>
+  <button class="mobile-menu-toggle" type="button"
+          aria-label="Open navigation menu"
+          aria-controls="primary-navigation"
+          aria-expanded="false">
+    <span></span><span></span><span></span>
+  </button>
+
+ <nav id="primary-navigation" class="primary-navigation">
     <a href="{{ url_for('home') }}">Explore</a>
 
     {% if current_user.is_authenticated %}
