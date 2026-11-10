@@ -736,6 +736,26 @@ def register():
                     return render_template(
                         "register.html", role=role, categories=categories
                     )
+                provider_photo.stream.seek(0, os.SEEK_END)
+                photo_size = provider_photo.stream.tell()
+                provider_photo.stream.seek(0)
+                if photo_size > 5 * 1024 * 1024:
+                    flash("Profile pictures must be 5 MB or smaller.", "error")
+                    return render_template(
+                        "register.html", role=role, categories=categories
+                    )
+                signature = provider_photo.stream.read(12)
+                provider_photo.stream.seek(0)
+                valid_image = (
+                    (photo_extension in {".jpg", ".jpeg"} and signature.startswith(b"\\xff\\xd8\\xff"))
+                    or (photo_extension == ".png" and signature.startswith(b"\\x89PNG\\r\\n\\x1a\\n"))
+                    or (photo_extension == ".webp" and signature[:4] == b"RIFF" and signature[8:12] == b"WEBP")
+                )
+                if not valid_image:
+                    flash("The selected profile picture is not a valid image.", "error")
+                    return render_template(
+                        "register.html", role=role, categories=categories
+                    )
             provider_data = (name, business_name, bio, city)
 
         photographer_data = None
@@ -818,7 +838,7 @@ def register():
                             f"{photo_extension}"
                         )
                         provider_photo.save(
-                            app.config["PORTFOLIO_UPLOAD_FOLDER"] + "/" + photo_name
+                            Path(app.config["PORTFOLIO_UPLOAD_FOLDER"]) / photo_name
                         )
                         con.execute("""
                             UPDATE providers
