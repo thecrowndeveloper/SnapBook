@@ -747,8 +747,8 @@ def register():
                 signature = provider_photo.stream.read(12)
                 provider_photo.stream.seek(0)
                 valid_image = (
-                    (photo_extension in {".jpg", ".jpeg"} and signature.startswith(b"\\xff\\xd8\\xff"))
-                    or (photo_extension == ".png" and signature.startswith(b"\\x89PNG\\r\\n\\x1a\\n"))
+                    (photo_extension in {".jpg", ".jpeg"} and signature.startswith(b"\xff\xd8\xff"))
+                    or (photo_extension == ".png" and signature.startswith(b"\x89PNG\r\n\x1a\n"))
                     or (photo_extension == ".webp" and signature[:4] == b"RIFF" and signature[8:12] == b"WEBP")
                 )
                 if not valid_image:
