@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}{{ document.title }} | OneCre8 Media{% endblock %}
+{% block content %}<section class="section auth-section"><article class="auth-card legal-document">
+<p class="eyebrow">ONECRE8 MEDIA · POLICY DOCUMENT</p><h1>{{ document.title }}</h1><p class="muted">Version {{ version }}</p>
+<div class="legal-draft-notice">{{ document.intro }}</div>
+{% for heading, body in document.sections %}<section class="legal-section"><h2>{{ heading }}</h2><p>{{ body }}</p></section>{% endfor %}
+<p class="muted">Final legal contact details and effective dates must be added before public launch.</p>
+<a class="btn btn-secondary" href="{{ url_for('register') }}">Back to create account</a>
+</article></section>{% endblock %}
