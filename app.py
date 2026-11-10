@@ -6,7 +6,7 @@ from datetime import datetime
 
 from flask import (
     Flask, render_template, request, redirect,
-    url_for, flash, abort, send_from_directory
+    url_for, flash, abort, send_from_directory, session
 )
 from flask_login import (
     LoginManager, UserMixin, current_user,
@@ -18,6 +18,11 @@ from werkzeug.utils import secure_filename
 from uuid import uuid4
 from mutagen.mp4 import MP4
 
+try:
+    from authlib.integrations.flask_client import OAuth
+except ImportError:
+    OAuth = None
+
 
 app = Flask(__name__)
 app.secret_key = os.environ.get(
@@ -25,7 +30,39 @@ app.secret_key = os.environ.get(
     "local-development-secret-change-before-deployment"
 )
 
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=os.environ.get("COOKIE_SECURE", "true").lower() == "true",
+)
+
 csrf = CSRFProtect(app)
+
+oauth = OAuth(app) if OAuth else None
+google_oauth = None
+if oauth and os.environ.get("GOOGLE_CLIENT_ID") and os.environ.get("GOOGLE_CLIENT_SECRET"):
+    google_oauth = oauth.register(
+        name="google",
+        client_id=os.environ["GOOGLE_CLIENT_ID"],
+        client_secret=os.environ["GOOGLE_CLIENT_SECRET"],
+        server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+        client_kwargs={"scope": "openid email profile"},
+    )
+
+LEGAL_VERSIONS = {
+    "terms": "0.1-draft",
+    "privacy": "0.1-draft",
+    "client-policy": "0.1-draft",
+    "professional-agreement": "0.1-draft",
+    "content-policy": "0.1-draft",
+}
+LAUNCH_POLICY = {
+    "commission_rate": 0.10,
+    "subscription_price": 0,
+    "delivery_review_hours": 72,
+    "payment_processing_fees": "Displayed separately at checkout",
+    "payments_enabled": False,
+}
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -241,6 +278,30 @@ def init_db():
         """)
 
         migrate_user_roles(con)
+
+        add_column_if_missing(con, "users", "auth_provider", "TEXT NOT NULL DEFAULT 'email'")
+        add_column_if_missing(con, "users", "google_subject", "TEXT")
+        add_column_if_missing(con, "users", "email_verified_at", "TEXT")
+        con.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_subject
+            ON users(google_subject)
+            WHERE google_subject IS NOT NULL
+        """)
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS legal_acceptances (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                document_key TEXT NOT NULL,
+                document_version TEXT NOT NULL,
+                accepted_at TEXT NOT NULL,
+                acceptance_method TEXT NOT NULL,
+                FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        """)
+        con.execute("""
+            CREATE INDEX IF NOT EXISTS idx_legal_acceptances_user
+            ON legal_acceptances(user_id, accepted_at)
+        """)
 
         # Marketplace categories
         con.execute("""
@@ -501,6 +562,88 @@ def init_db():
             """, seed)
 
 
+def record_legal_acceptances(con, user_id, role, method):
+    document_keys = ["terms", "privacy", "content-policy"]
+    document_keys.append(
+        "professional-agreement" if role in ("provider", "photographer")
+        else "client-policy"
+    )
+    accepted_at = datetime.utcnow().isoformat()
+    con.executemany("""
+        INSERT INTO legal_acceptances
+            (user_id, document_key, document_version, accepted_at, acceptance_method)
+        VALUES (?, ?, ?, ?, ?)
+    """, [
+        (user_id, key, LEGAL_VERSIONS[key], accepted_at, method)
+        for key in document_keys
+    ])
+
+
+def legal_documents():
+    return {
+        "terms": {
+            "title": "General Terms and Conditions",
+            "intro": "DRAFT FOR NIGERIAN LEGAL REVIEW. These draft terms describe intended OneCre8 marketplace rules and must be reviewed and approved by qualified Nigerian counsel before being treated as final legal terms.",
+            "sections": [
+                ("1. Platform role", "OneCre8 provides an online marketplace for clients to discover and contact creative professionals. Unless a specific written agreement says otherwise, the professional and client remain responsible for agreeing and performing the underlying service."),
+                ("2. Accounts", "Users must provide accurate information, protect sign-in credentials, keep account details current and promptly report suspected unauthorised access."),
+                ("3. Marketplace conduct", "Users must not engage in fraud, impersonation, harassment, discrimination, threats, fake reviews, misleading listings or misuse of another person's personal data or intellectual property."),
+                ("4. Launch fees", "The launch model is free to join with no mandatory subscription. The proposed OneCre8 commission is 10% of the eligible completed transaction amount. The commission base, taxes and payment-provider charges must be disclosed before a professional accepts a booking."),
+                ("5. Payments", "Live payment collection, custody, split settlement and payouts are not enabled in this release. Any future payment flow requires payment-provider and legal approval and separately published payment terms."),
+                ("6. Disputes", "Complaints will be reviewed individually using booking terms and available evidence. Nothing in these draft terms removes rights or remedies that cannot lawfully be excluded."),
+                ("7. Suspension and appeals", "OneCre8 may investigate suspected policy violations and take proportionate action. Where reasonably possible, affected users will receive the reason and an opportunity to respond or appeal."),
+                ("8. Changes", "Material changes will be communicated and, where required, users will be asked to accept the updated version.")
+            ]
+        },
+        "privacy": {
+            "title": "Privacy Policy",
+            "intro": "DRAFT FOR NIGERIAN DATA-PROTECTION REVIEW. Complete this notice with OneCre8's legal identity, contact details, retention schedule, processors and approved lawful bases before launch.",
+            "sections": [
+                ("1. Information collected", "Account name, email, role, profile details, portfolio uploads, listings, booking details, messages, support records, security logs and payment references when payment features are later enabled."),
+                ("2. Google sign-in", "Google sign-in requests OpenID Connect identity, email and basic profile scopes only. OneCre8 does not request permission to read, send or manage Gmail messages."),
+                ("3. Uses", "Information is used to create and secure accounts, operate marketplace features, connect clients and professionals, respond to support requests, prevent fraud and meet legal obligations."),
+                ("4. Sharing", "Information may be shared with the other party to a booking, service providers acting on OneCre8's instructions, approved payment providers when enabled, and authorities where legally required."),
+                ("5. Security and retention", "OneCre8 will apply access controls and reasonable safeguards. Final retention periods and deletion procedures must be documented before launch."),
+                ("6. User rights", "Users may have rights to request access, correction, deletion or other remedies under applicable data-protection law. A working privacy contact and request process must be published before launch.")
+            ]
+        },
+        "client-policy": {
+            "title": "Client Booking and Service Policy",
+            "intro": "DRAFT FOR LEGAL REVIEW. This policy is intended to clarify booking expectations while preserving mandatory consumer rights.",
+            "sections": [
+                ("1. Before booking", "Review the scope, deliverables, price, date, location, revision allowance, cancellation terms and additional expenses before accepting."),
+                ("2. Delivery", "The professional should deliver the agreed work or service by the agreed deadline and notify the client when it is ready for review."),
+                ("3. Review period", "The intended review period is 72 hours after a valid delivery notification. Final rules must define when it starts, what counts as delivery, extensions and statutory-rights exceptions."),
+                ("4. Complaints and refunds", "Refund and dispute requests are reviewed case by case using the agreed scope, communications, delivery evidence and applicable law. A blanket no-refund rule does not apply."),
+                ("5. Client responsibilities", "Clients should provide accurate briefs, materials, access and feedback required by the agreed schedule.")
+            ]
+        },
+        "professional-agreement": {
+            "title": "Creative Professional Agreement",
+            "intro": "DRAFT FOR NIGERIAN LEGAL REVIEW. Final terms must clarify professional status, platform responsibilities, payment-provider structure and consumer-law obligations.",
+            "sections": [
+                ("1. Free launch membership", "There is no mandatory monthly subscription at launch. Any future paid plan requires separate pricing and consent."),
+                ("2. Commission", "The proposed OneCre8 commission is 10% of the eligible completed transaction amount. The calculation must be disclosed before a professional accepts a booking. Payment-provider charges and taxes are separate line items."),
+                ("3. Professional obligations", "Keep listings accurate, honour accepted bookings, deliver the agreed scope, obtain permissions for portfolio materials and treat clients respectfully."),
+                ("4. Scope changes", "Additional work, expenses, revisions or schedule changes should be agreed in writing before the extra work is undertaken."),
+                ("5. Delivery and review", "The intended client review period is 72 hours after valid delivery notification. Payout eligibility is not active in this release and requires approved payment-provider arrangements."),
+                ("6. Fair complaints process", "Professionals may respond to complaints and submit evidence. Decisions should be reasoned, proportionate and subject to a defined appeal process."),
+                ("7. Intellectual property", "Ownership, licences, portfolio display and client usage rights should be agreed in each booking and must respect third-party rights.")
+            ]
+        },
+        "content-policy": {
+            "title": "Marketplace Content and Review Policy",
+            "intro": "DRAFT FOR LEGAL REVIEW. This policy applies to listings, portfolio uploads, messages, ratings and public reviews.",
+            "sections": [
+                ("1. Rights and permissions", "Only upload content you own or are authorised to use. Obtain appropriate consent before publishing identifiable client images or private event footage."),
+                ("2. Prohibited material", "Do not upload unlawful, deceptive, infringing, exploitative, harassing, discriminatory or privacy-invasive material."),
+                ("3. Reviews", "Reviews must reflect genuine marketplace experiences. Fake, purchased, retaliatory or manipulated reviews are prohibited."),
+                ("4. Reporting and moderation", "Users may report content or reviews. OneCre8 may investigate and restrict or remove material under a documented process with an appeal route.")
+            ]
+        }
+    }
+
+
 def role_required(role):
     if not current_user.is_authenticated:
         return redirect(url_for("login"))
@@ -674,6 +817,22 @@ def register():
                 "register.html", role="client", categories=categories
             )
 
+        required_agreement = (
+            "accept_professional_agreement"
+            if role in ("provider", "photographer")
+            else "accept_client_policy"
+        )
+        if not all(request.form.get(key) for key in (
+            "accept_terms", "accept_privacy", "accept_content_policy",
+            required_agreement
+        )):
+            flash("Please review and accept the required OneCre8 policies.", "error")
+            return render_template(
+                "register.html", role=role, categories=categories,
+                legal_versions=LEGAL_VERSIONS,
+                google_enabled=bool(google_oauth)
+            )
+
         if not name or not email or not password:
             flash("Please complete all required fields.", "error")
             return render_template(
@@ -805,6 +964,7 @@ def register():
                 ))
 
                 user_id = cursor.lastrowid
+                record_legal_acceptances(con, user_id, role, "email")
 
                 if photographer_data:
                     con.execute("""
@@ -864,8 +1024,143 @@ def register():
             flash("An account with that email already exists.", "error")
 
     return render_template(
-        "register.html", role=role, categories=categories
+        "register.html", role=role, categories=categories,
+        legal_versions=LEGAL_VERSIONS, google_enabled=bool(google_oauth)
     )
+
+
+@app.route("/legal/<slug>")
+def legal_document(slug):
+    document = legal_documents().get(slug)
+    if not document:
+        abort(404)
+    return render_template(
+        "legal_document.html", document=document,
+        version=LEGAL_VERSIONS[slug], slug=slug
+    )
+
+
+@app.route("/auth/google/start", methods=["POST"])
+def google_start():
+    if not google_oauth:
+        flash("Google sign-in is not configured yet. Please use email and password.", "error")
+        return redirect(url_for("register"))
+    role = request.form.get("role", "client")
+    if role not in ("client", "provider"):
+        abort(400)
+    role_doc = "accept_professional_agreement" if role == "provider" else "accept_client_policy"
+    if not all(request.form.get(key) for key in (
+        "accept_terms", "accept_privacy", "accept_content_policy", role_doc
+    )):
+        flash("Please review and accept the required OneCre8 policies first.", "error")
+        return redirect(url_for("register", role=role))
+    session["pending_google_registration"] = {
+        "role": role,
+        "name": request.form.get("name", "").strip(),
+        "business_name": request.form.get("business_name", "").strip(),
+        "city": request.form.get("city", "").strip(),
+        "bio": request.form.get("bio", "").strip(),
+        "category_ids": request.form.getlist("category_ids"),
+    }
+    session["pending_google_acceptance"] = True
+    return google_oauth.authorize_redirect(url_for("google_callback", _external=True))
+
+
+@app.route("/auth/google/login")
+def google_login():
+    if not google_oauth:
+        flash("Google sign-in is not configured yet.", "error")
+        return redirect(url_for("login"))
+    session.pop("pending_google_registration", None)
+    session.pop("pending_google_acceptance", None)
+    session["google_login_only"] = True
+    return google_oauth.authorize_redirect(url_for("google_callback", _external=True))
+
+
+@app.route("/auth/google/callback")
+def google_callback():
+    if not google_oauth:
+        abort(503)
+    token = google_oauth.authorize_access_token()
+    identity = token.get("userinfo") or google_oauth.userinfo()
+    email = (identity.get("email") or "").strip().lower()
+    subject = identity.get("sub")
+    verified = identity.get("email_verified") in (True, "true", "True", 1)
+    if not email or not subject or not verified:
+        flash("Google did not provide a verified email address.", "error")
+        return redirect(url_for("register"))
+
+    pending = session.pop("pending_google_registration", None)
+    accepted = session.pop("pending_google_acceptance", False)
+    login_only = session.pop("google_login_only", False)
+    with connect() as con:
+        row = con.execute("SELECT * FROM users WHERE google_subject = ?", (subject,)).fetchone()
+        if not row and login_only:
+            row = con.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+            if not row:
+                flash("No OneCre8 account is linked to that Google address. Please register first.", "error")
+                return redirect(url_for("register"))
+            con.execute("""
+                UPDATE users SET google_subject = ?, auth_provider = 'google_linked',
+                    email_verified_at = COALESCE(email_verified_at, ?)
+                WHERE id = ?
+            """, (subject, datetime.utcnow().isoformat(), row["id"]))
+            row = con.execute("SELECT * FROM users WHERE id = ?", (row["id"],)).fetchone()
+        elif not row and pending and accepted:
+            row = con.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+            if row:
+                con.execute("""
+                    UPDATE users SET google_subject = ?, auth_provider = 'google_linked',
+                        email_verified_at = COALESCE(email_verified_at, ?)
+                    WHERE id = ?
+                """, (subject, datetime.utcnow().isoformat(), row["id"]))
+                row = con.execute("SELECT * FROM users WHERE id = ?", (row["id"],)).fetchone()
+            else:
+                role = pending["role"]
+                name = pending["name"] or identity.get("name") or email.split("@")[0]
+                cursor = con.execute("""
+                    INSERT INTO users
+                        (name, email, password_hash, role, created_at,
+                         auth_provider, google_subject, email_verified_at)
+                    VALUES (?, ?, ?, ?, ?, 'google', ?, ?)
+                """, (
+                    name, email, generate_password_hash(uuid4().hex),
+                    role, datetime.utcnow().isoformat(), subject,
+                    datetime.utcnow().isoformat()
+                ))
+                user_id = cursor.lastrowid
+                record_legal_acceptances(con, user_id, role, "google")
+                if role == "provider":
+                    provider_cursor = con.execute("""
+                        INSERT INTO providers
+                            (user_id, display_name, business_name, bio, city)
+                        VALUES (?, ?, ?, ?, ?)
+                    """, (user_id, name, pending["business_name"], pending["bio"], pending["city"]))
+                    provider_id = provider_cursor.lastrowid
+                    try:
+                        category_ids = list({int(value) for value in pending["category_ids"]})
+                    except (TypeError, ValueError):
+                        category_ids = []
+                    valid_ids = {item["id"] for item in con.execute("SELECT id FROM categories").fetchall()}
+                    if category_ids and set(category_ids).issubset(valid_ids):
+                        con.executemany("""
+                            INSERT OR IGNORE INTO provider_categories (provider_id, category_id)
+                            VALUES (?, ?)
+                        """, [(provider_id, value) for value in category_ids])
+                row = con.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+        elif not row:
+            flash("Please start Google registration from the create-account page.", "error")
+            return redirect(url_for("register"))
+
+    if not row:
+        abort(403)
+    login_user(User(row))
+    flash("You are signed in to OneCre8.", "success")
+    if row["role"] == "provider":
+        return redirect(url_for("provider_dashboard"))
+    if row["role"] == "photographer":
+        return redirect(url_for("dashboard"))
+    return redirect(url_for("my_bookings"))
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -900,7 +1195,7 @@ def login():
 
             flash("Invalid email or password.", "error")
 
-    return render_template("login.html")
+    return render_template("login.html", google_enabled=bool(google_oauth))
 
 @app.route("/logout", methods=["POST"])
 @login_required
