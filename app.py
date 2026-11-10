@@ -1,10 +1,11 @@
 
 import os
 import sqlite3
+import hashlib
 import smtplib
 from email.message import EmailMessage
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 
 from flask import (
@@ -306,6 +307,19 @@ def init_db():
             ON legal_acceptances(user_id, accepted_at)
         """)
 
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS account_email_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                recipient_hash TEXT NOT NULL,
+                event_type TEXT NOT NULL,
+                sent_at TEXT NOT NULL
+            )
+        """)
+        con.execute("""
+            CREATE INDEX IF NOT EXISTS idx_account_email_events_recipient
+            ON account_email_events(recipient_hash, event_type, sent_at)
+        """)
+
         # Marketplace categories
         con.execute("""
             CREATE TABLE IF NOT EXISTS categories (
@@ -569,7 +583,36 @@ def account_token_serializer():
     return URLSafeTimedSerializer(app.secret_key, salt="onecre8-account-security-v1")
 
 
-def send_account_email(recipient, subject, body):
+def reserve_account_email(recipient, event_type, limit=3, window_minutes=60):
+    """Limit account-security email sends to three per recipient per hour."""
+    recipient_hash = hashlib.sha256(
+        recipient.strip().lower().encode("utf-8")
+    ).hexdigest()
+    now = datetime.utcnow()
+    cutoff = (now - timedelta(minutes=window_minutes)).isoformat()
+    with connect() as con:
+        con.execute("BEGIN IMMEDIATE")
+        con.execute(
+            "DELETE FROM account_email_events WHERE sent_at < ?",
+            ((now - timedelta(days=30)).isoformat(),)
+        )
+        count = con.execute("""
+            SELECT COUNT(*) AS total
+            FROM account_email_events
+            WHERE recipient_hash = ? AND event_type = ? AND sent_at >= ?
+        """, (recipient_hash, event_type, cutoff)).fetchone()["total"]
+        if count >= limit:
+            con.rollback()
+            return False
+        con.execute("""
+            INSERT INTO account_email_events
+                (recipient_hash, event_type, sent_at)
+            VALUES (?, ?, ?)
+        """, (recipient_hash, event_type, now.isoformat()))
+    return True
+
+
+def send_account_email(recipient, subject, body, event_type):
     """Send account security mail through configured SMTP; never log tokens."""
     host = os.environ.get("SMTP_HOST")
     username = os.environ.get("SMTP_USERNAME")
@@ -577,6 +620,9 @@ def send_account_email(recipient, subject, body):
     sender = os.environ.get("MAIL_FROM")
     if not all((host, username, password, sender)):
         app.logger.warning("Account email unavailable: SMTP settings are incomplete.")
+        return False
+    if not reserve_account_email(recipient, event_type):
+        app.logger.warning("Account security email rate limit reached.")
         return False
 
     message = EmailMessage()
@@ -607,7 +653,8 @@ def send_verification_email(user):
         "Verify your OneCre8 Media email",
         "Welcome to OneCre8 Media. Verify your email address using this secure link. "
         "The link expires in 24 hours. If you did not create this account, ignore this email.\n\n"
-        + link
+        + link,
+        "verification"
     )
 
 
@@ -626,7 +673,8 @@ def send_password_reset_email(user):
         "Reset your OneCre8 Media password",
         "A password reset was requested for your OneCre8 Media account. "
         "This secure link expires in 1 hour. If you did not request it, ignore this email.\n\n"
-        + link
+        + link,
+        "password_reset"
     )
 
 
@@ -1277,12 +1325,8 @@ def resend_verification():
             ).fetchone()
         # Keep response generic to avoid disclosing whether an account exists.
         if user and user["auth_provider"] == "email_pending":
-            if send_verification_email(user):
-                flash("If the account needs verification, a new link has been sent.", "success")
-            else:
-                flash("Email delivery is temporarily unavailable. Please try again later.", "error")
-        else:
-            flash("If the account needs verification, a new link has been sent.", "success")
+            send_verification_email(user)
+        flash("If the account needs verification, a new link has been sent, it will arrive shortly.", "success")
         return redirect(url_for("login"))
     return render_template("resend_verification.html")
 
@@ -1296,9 +1340,7 @@ def forgot_password():
                 "SELECT * FROM users WHERE email = ?", (email,)
             ).fetchone()
         if user and user["auth_provider"] != "google":
-            if not send_password_reset_email(user):
-                flash("Password reset email could not be sent right now. Please try again later.", "error")
-                return render_template("forgot_password.html")
+            send_password_reset_email(user)
         flash("If an account exists for that email, password reset instructions have been sent.", "success")
         return redirect(url_for("login"))
     return render_template("forgot_password.html")
