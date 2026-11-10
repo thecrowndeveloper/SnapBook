@@ -2384,3 +2384,83 @@ footer .footer-logo { font-size: 21px; }
 /* Give the OneCre8 wordmark a warm metallic identity. */
 .topbar .logo, footer .footer-logo { color: var(--gold-dark) !important; }
 .topbar .logo i, footer .footer-logo i { color: var(--gold) !important; }
+
+
+/* Homepage discovery shelves: calm, bookstore-style horizontal collections. */
+.showcase-library {
+  padding: 66px max(5%, calc((100% - 1240px) / 2)) 78px;
+  background: var(--white);
+}
+.showcase-intro { max-width: 650px; margin: 0 auto 44px; text-align: center; }
+.showcase-intro h2 { margin: 9px 0 10px; font-size: clamp(27px, 3vw, 39px); letter-spacing: -1.4px; }
+.showcase-intro > p:last-child { color: var(--muted); font-size: 14px; line-height: 1.7; }
+.showcase-shelf { padding: 30px 0 36px; border-top: 1px solid var(--line); }
+.showcase-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 20px; }
+.showcase-heading .eyebrow { margin: 0 0 7px; color: var(--gold-dark); font-size: 9px; letter-spacing: 1.5px; }
+.showcase-heading h2 { margin: 0 0 5px; color: var(--ink); font-size: clamp(23px, 2.5vw, 30px); letter-spacing: -.8px; }
+.showcase-heading > div > p:last-child { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.showcase-see-all { flex: 0 0 auto; color: var(--gold-dark); font-size: 11px; font-weight: 700; text-decoration: none; }
+.showcase-see-all span { padding-left: 5px; font-size: 17px; vertical-align: -1px; }
+.showcase-track-wrap { position: relative; }
+.showcase-track {
+  display: grid;
+  grid-auto-columns: minmax(250px, 1fr);
+  grid-auto-flow: column;
+  grid-template-rows: 1fr;
+  gap: 17px;
+  overflow-x: auto;
+  padding: 2px 2px 12px;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: #d6c7ae transparent;
+}
+.showcase-card {
+  min-width: 0;
+  overflow: hidden;
+  background: var(--white);
+  border: 1px solid var(--line);
+  scroll-snap-align: start;
+}
+.showcase-image { position: relative; display: block; aspect-ratio: 16 / 10; overflow: hidden; background: var(--sand); }
+.showcase-image img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .35s ease; }
+.showcase-card:hover .showcase-image img { transform: scale(1.035); }
+.showcase-open { position: absolute; right: 11px; bottom: 11px; padding: 7px 10px; background: rgba(35,31,25,.84); color: #fff; font-size: 9px; letter-spacing: .2px; }
+.showcase-card-body { padding: 15px 16px 16px; }
+.showcase-type { color: var(--gold-dark); font-size: 9px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; }
+.showcase-card h3 { margin: 7px 0 5px; font-size: 16px; line-height: 1.35; }
+.showcase-card h3 a { color: var(--ink); text-decoration: none; }
+.showcase-description { min-height: 34px; margin: 0 0 13px; color: var(--muted); font-size: 11px; line-height: 1.55; }
+.showcase-seller { display: flex; align-items: center; gap: 9px; min-height: 38px; padding-top: 11px; border-top: 1px solid var(--line); }
+.showcase-seller > img, .showcase-avatar { display: grid; flex: 0 0 34px; width: 34px; height: 34px; border-radius: 50%; object-fit: cover; background: var(--sand); color: var(--gold-dark); place-items: center; font-size: 13px; font-weight: 700; }
+.showcase-seller > span:last-child { display: flex; min-width: 0; flex-direction: column; gap: 1px; }
+.showcase-seller small { color: var(--muted); font-size: 8px; letter-spacing: .7px; }
+.showcase-seller a { overflow: hidden; color: var(--ink); font-size: 11px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; text-decoration: none; }
+.showcase-price { margin-top: 12px; color: var(--ink); font-size: 13px; font-weight: 700; }
+.showcase-empty { display: flex; min-height: 180px; flex: 1 0 100%; flex-direction: column; justify-content: center; padding: 26px; background: var(--paper); border: 1px dashed #d8cbb8; }
+.showcase-empty > span { color: var(--gold-dark); font-size: 9px; font-weight: 700; letter-spacing: 1.2px; }
+.showcase-empty p { margin: 9px 0; color: var(--muted); font-size: 13px; }
+.showcase-empty a { color: var(--ink); font-size: 11px; font-weight: 700; }
+.showcase-arrow { position: absolute; top: 39%; z-index: 2; display: grid; width: 36px; height: 36px; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: var(--white); color: var(--ink); font-size: 25px; line-height: 1; box-shadow: 0 3px 12px rgba(0,0,0,.09); cursor: pointer; }
+.showcase-prev { left: -17px; }
+.showcase-next { right: -17px; }
+.showcase-arrow:hover { background: var(--ink); color: #fff; }
+.profile-upload-field small { display: block; margin-top: 6px; font-size: 11px; line-height: 1.5; }
+.profile-upload-field input[type="file"] { padding: 10px; background: var(--paper); border: 1px solid var(--line); }
+@media (min-width: 1000px) {
+  .showcase-track { grid-auto-columns: calc((100% - 34px) / 3); }
+}
+@media (min-width: 650px) and (max-width: 999px) {
+  .showcase-track { grid-auto-columns: calc((100% - 17px) / 2); }
+}
+@media (max-width: 649px) {
+  .showcase-library { padding: 48px 5% 55px; }
+  .showcase-intro { margin-bottom: 27px; text-align: left; }
+  .showcase-shelf { padding: 25px 0 28px; }
+  .showcase-heading { align-items: start; gap: 10px; }
+  .showcase-heading h2 { font-size: 22px; }
+  .showcase-heading > div > p:last-child { max-width: 240px; }
+  .showcase-see-all { margin-top: 24px; font-size: 10px; }
+  .showcase-track { grid-auto-columns: minmax(78%, 1fr); gap: 12px; }
+  .showcase-arrow { display: none; }
+}
