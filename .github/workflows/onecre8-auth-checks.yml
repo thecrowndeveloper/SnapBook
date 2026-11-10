@@ -142,6 +142,11 @@ jobs:
           assert response.status_code == 302
           assert "/forgot-password" in response.headers["Location"]
 
+          assert onecre8.reserve_account_email("rate-limit@example.test", "verification")
+          assert onecre8.reserve_account_email("rate-limit@example.test", "verification")
+          assert onecre8.reserve_account_email("rate-limit@example.test", "verification")
+          assert not onecre8.reserve_account_email("rate-limit@example.test", "verification")
+
           assert onecre8.LAUNCH_POLICY["payments_enabled"] is False
           assert onecre8.LAUNCH_POLICY["commission_rate"] == 0.10
           assert onecre8.LAUNCH_POLICY["delivery_review_hours"] == 72
