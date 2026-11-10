@@ -2783,3 +2783,44 @@ footer .footer-logo { font-size: 21px; }
     letter-spacing: 1px;
   }
 }
+
+/* Refined category listing card typography — preserve existing font sizes */
+.showcase-card .showcase-type,
+.showcase-card .showcase-description,
+.showcase-card .showcase-open,
+.showcase-card .showcase-seller small,
+.showcase-card .showcase-seller a,
+.showcase-card .showcase-price {
+  font-family: 'DM Sans', sans-serif;
+}
+
+.showcase-card .showcase-type {
+  font-weight: 800;
+  letter-spacing: .9px;
+}
+
+.showcase-card .showcase-description {
+  font-weight: 500;
+  color: #777168;
+  letter-spacing: .05px;
+}
+
+.showcase-card .showcase-open {
+  font-weight: 600;
+  letter-spacing: .25px;
+}
+
+.showcase-card .showcase-seller small {
+  font-weight: 600;
+  letter-spacing: .65px;
+}
+
+.showcase-card .showcase-seller a {
+  font-weight: 700;
+  letter-spacing: .05px;
+}
+
+.showcase-card .showcase-price {
+  font-weight: 800;
+  letter-spacing: -.1px;
+}
