@@ -2824,3 +2824,26 @@ footer .footer-logo { font-size: 21px; }
   font-weight: 800;
   letter-spacing: -.1px;
 }
+
+
+
+
+
+/* OneCre8 category imagery: preserve full photo, no forced crop */
+.showcase-empty-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: none;
+  aspect-ratio: auto;
+  object-fit: contain;
+  margin: 0;
+}
+.showcase-empty {
+  align-items: stretch;
+  justify-content: flex-start;
+  height: auto;
+  min-height: 0;
+}
+.showcase-empty > span { margin: 22px 18px 0; }
+.showcase-empty p { margin: 9px 18px 18px; }
