@@ -109,3 +109,44 @@ A GitHub Actions workflow was added at `.github/workflows/onecre8-auth-checks.ym
 
 
 Account verification and password-reset emails are limited to three messages per recipient and message type per hour. Password-reset requests use a generic response to reduce account-enumeration risk. Configure provider-level abuse protection and monitor delivery failures before launch.
+
+
+## Resend transactional email configuration
+
+The Flask application uses Python's standard-library SMTP client, so no Resend SDK or API key is added to the repository. Configure Resend as follows in the **non-production test environment first**:
+
+| Environment variable | Value |
+|---|---|
+| `SMTP_HOST` | `smtp.resend.com` |
+| `SMTP_PORT` | `587` |
+| `SMTP_USERNAME` | `resend` |
+| `SMTP_PASSWORD` | Resend API key (secret; never commit or paste into chat) |
+| `MAIL_FROM` | A sender address on a domain verified in Resend, e.g. `OneCre8 Media <accounts@your-verified-domain>` |
+
+The current implementation opens an SMTP connection, upgrades it with STARTTLS, authenticates and sends a plain-text message. This matches Resend's documented STARTTLS configuration on port 587. Resend also documents SMTPS on port 465; the application currently uses STARTTLS, so use port 587 unless the transport implementation is deliberately changed.
+
+### Resend setup checklist
+
+1. Sign in to Resend and open **Domains**.
+2. Add a domain OneCre8 owns or is authorised to send from. Prefer a dedicated sending subdomain if the primary domain already handles business email.
+3. Add the DNS records Resend displays at the domain's DNS host. Do not guess or substitute DNS values. Complete the DKIM and SPF records, and configure DMARC in line with Resend's guidance and the domain's existing mail setup.
+4. Wait until Resend marks the sending domain verified.
+5. Create a restricted API key for the OneCre8 application. Give it only the permissions needed for sending email, if Resend offers that scope for the chosen key type.
+6. In the **staging/test Railway environment**, add the five variables in the table above. Enter the API key directly in Railway's variable editor; do not send it to ChatGPT, paste it into a terminal command, or commit it to GitHub.
+7. Set `MAIL_FROM` to an address on the verified domain. The address does not need to be a personal inbox, but the domain must be verified and the sender should be monitored.
+8. Redeploy only the staging service after saving the variables.
+
+### Safe test procedure
+
+- Use an inbox controlled by the project owner or tester.
+- Submit a test client registration and confirm the verification message arrives.
+- Open the link and confirm the account can then log in.
+- Test resend verification and forgot-password; confirm the reset message arrives and the link works once.
+- Request a second reset after using the first link; confirm the old link is rejected.
+- Check Resend's Emails dashboard for accepted, delivered, bounced or failed status.
+- Check Railway logs for connection or authentication errors. Never print SMTP environment variables or message tokens in logs.
+- Do not test with real customer addresses until the sender domain, content and privacy/legal notices are approved.
+
+### Production gate
+
+Do not add these credentials to the production Railway service until staging delivery succeeds and the registration release is approved. Adding variables to a live Railway service may trigger a redeployment. Keep production payment functions disabled. Rotate the Resend API key immediately if it is ever exposed, and update the secret only in the affected Railway environment.
