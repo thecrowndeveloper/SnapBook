@@ -581,7 +581,7 @@ def home():
 
         # Small, category-specific homepage previews keep discovery curated.
         showcase_services = {}
-        for slug in ("photography", "videography", "spaces-studios"):
+        for slug in ("photography", "videography", "spaces-studios", "photo-framing", "interior-design"):
             showcase_services[slug] = con.execute("""
                 SELECT services.id, services.title, services.description,
                        services.pricing_mode, services.price,
