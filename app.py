@@ -579,6 +579,55 @@ def home():
             service_query, service_args
         ).fetchall()
 
+        # Small, category-specific homepage previews keep discovery curated.
+        showcase_services = {}
+        for slug in ("photography", "videography", "spaces-studios"):
+            showcase_services[slug] = con.execute("""
+                SELECT services.id, services.title, services.description,
+                       services.pricing_mode, services.price,
+                       categories.name AS category_name,
+                       providers.id AS provider_id,
+                       providers.display_name, providers.business_name,
+                       providers.city, providers.profile_image,
+                       COALESCE(
+                           (SELECT '/portfolio-media/' || portfolio_items.filename
+                            FROM portfolio_items
+                            WHERE portfolio_items.provider_id = providers.id
+                              AND portfolio_items.media_type = 'image'
+                            ORDER BY portfolio_items.created_at DESC
+                            LIMIT 1),
+                           providers.profile_image
+                       ) AS preview_image
+                FROM services
+                JOIN categories ON categories.id = services.category_id
+                JOIN providers ON providers.id = services.provider_id
+                WHERE services.is_active = 1
+                  AND categories.slug = ?
+                  AND (? = '' OR providers.city LIKE ?)
+                ORDER BY services.created_at DESC
+                LIMIT 4
+            """, (slug, city, f"%{city}%")).fetchall()
+
+        showcase_products = {}
+        for slug in ("media-equipment", "artwork", "costume-rentals"):
+            showcase_products[slug] = con.execute("""
+                SELECT products.id, products.title, products.description,
+                       products.listing_type, products.price,
+                       products.quantity_available, products.image,
+                       categories.name AS category_name,
+                       providers.id AS provider_id,
+                       providers.display_name, providers.business_name,
+                       providers.city, providers.profile_image
+                FROM products
+                JOIN categories ON categories.id = products.category_id
+                JOIN providers ON providers.id = products.provider_id
+                WHERE products.is_active = 1
+                  AND categories.slug = ?
+                  AND (? = '' OR providers.city LIKE ?)
+                ORDER BY products.created_at DESC
+                LIMIT 4
+            """, (slug, city, f"%{city}%")).fetchall()
+
         categories = con.execute(
             "SELECT id, name, slug FROM categories ORDER BY name"
         ).fetchall()
@@ -588,6 +637,8 @@ def home():
         photographers=photographers,
         creative_professionals=creative_professionals,
         marketplace_services=marketplace_services,
+        showcase_services=showcase_services,
+        showcase_products=showcase_products,
         categories=categories,
         locations=NIGERIAN_LOCATIONS,
         city=city,
@@ -674,6 +725,17 @@ def register():
                     "register.html", role=role, categories=categories
                 )
 
+            provider_photo = request.files.get("profile_image")
+            if provider_photo and provider_photo.filename:
+                allowed_image_extensions = {".jpg", ".jpeg", ".png", ".webp"}
+                photo_extension = Path(
+                    secure_filename(provider_photo.filename)
+                ).suffix.lower()
+                if photo_extension not in allowed_image_extensions:
+                    flash("Profile picture must be JPG, PNG or WebP.", "error")
+                    return render_template(
+                        "register.html", role=role, categories=categories
+                    )
             provider_data = (name, business_name, bio, city)
 
         photographer_data = None
@@ -749,6 +811,20 @@ def register():
                         (provider_id, category_id)
                         for category_id in selected_category_ids
                     ])
+
+                    if provider_photo and provider_photo.filename:
+                        photo_name = (
+                            f"profile-{provider_id}-{uuid4().hex}"
+                            f"{photo_extension}"
+                        )
+                        provider_photo.save(
+                            app.config["PORTFOLIO_UPLOAD_FOLDER"] + "/" + photo_name
+                        )
+                        con.execute("""
+                            UPDATE providers
+                            SET profile_image = ?
+                            WHERE id = ?
+                        """, ("/profile-media/" + photo_name, provider_id))
 
                 user_row = con.execute(
                     "SELECT * FROM users WHERE id = ?", (user_id,)
