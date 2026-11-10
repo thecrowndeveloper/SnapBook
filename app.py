@@ -33,7 +33,7 @@ app.secret_key = os.environ.get(
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
-    SESSION_COOKIE_SECURE=os.environ.get("COOKIE_SECURE", "true").lower() == "true",
+    SESSION_COOKIE_SECURE=os.environ.get("COOKIE_SECURE", "true" if os.environ.get("RAILWAY_PROJECT_ID") else "false").lower() == "true",
 )
 
 csrf = CSRFProtect(app)
@@ -1054,6 +1054,19 @@ def google_start():
     )):
         flash("Please review and accept the required OneCre8 policies first.", "error")
         return redirect(url_for("register", role=role))
+    if role == "provider":
+        city = request.form.get("city", "").strip()
+        bio = request.form.get("bio", "").strip()
+        try:
+            category_ids = {int(value) for value in request.form.getlist("category_ids")}
+        except ValueError:
+            category_ids = set()
+        with connect() as con:
+            valid_ids = {item["id"] for item in con.execute("SELECT id FROM categories").fetchall()}
+        if not city or not bio or not category_ids or not category_ids.issubset(valid_ids):
+            flash("Creative professionals must provide a city, biography and at least one valid category.", "error")
+            return redirect(url_for("register", role="provider"))
+
     session["pending_google_registration"] = {
         "role": role,
         "name": request.form.get("name", "").strip(),
@@ -1193,7 +1206,7 @@ def login():
 
             return redirect(url_for("my_bookings"))
 
-            flash("Invalid email or password.", "error")
+        flash("Invalid email or password.", "error")
 
     return render_template("login.html", google_enabled=bool(google_oauth))
 
