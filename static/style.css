@@ -2724,3 +2724,27 @@ footer .footer-logo { font-size: 21px; }
     font-size: 42px;
   }
 }
+
+
+/* Final mobile discovery correction: every category remains visible and shelves fit phones. */
+@media (max-width: 700px) {
+  .showcase-library { overflow: visible; }
+  .showcase-shelf { display: block; width: 100%; }
+  .showcase-track-wrap { display: block; width: 100%; overflow: hidden; }
+  .showcase-track {
+    display: flex;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+  }
+  .showcase-card, .showcase-empty {
+    display: block;
+    flex: 0 0 88%;
+    width: 88%;
+    max-width: 88%;
+  }
+  .showcase-arrow { display: none !important; }
+  .page-nav { font-size: 11px !important; font-weight: 700; }
+}
