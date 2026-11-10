@@ -2934,3 +2934,217 @@ footer .footer-logo { font-size: 21px; }
   }
   .topbar nav.primary-navigation .nav-logout { display: block !important; width: 100% !important; }
 }
+
+
+/* ONECRE8 PREMIUM DASHBOARD + MARKETPLACE FINISH */
+.dashboard {
+  background: #f6f2e9;
+  padding: clamp(34px, 5vw, 68px) max(6%, calc((100% - 1320px) / 2));
+}
+.dashboard .workspace-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 30px 34px;
+  margin-bottom: 22px;
+  background: linear-gradient(135deg, #fffdf8 0%, #f1e9da 100%);
+  border: 1px solid #d9c49f;
+  border-radius: 18px;
+  box-shadow: 0 14px 36px rgba(70, 52, 27, .07);
+}
+.dashboard .workspace-hero h1 {
+  margin: 0 0 8px;
+  color: #29231b;
+  font-size: clamp(30px, 4vw, 44px);
+  letter-spacing: -1.5px;
+}
+.dashboard .workspace-hero .muted { margin: 0; color: #766d60; }
+.dashboard .workspace-hero .btn { border-radius: 7px; }
+.dashboard .workspace-stat {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0 0 24px;
+}
+.dashboard .workspace-stat span {
+  display: flex;
+  min-height: 90px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  padding: 17px 20px;
+  color: #756b5d;
+  background: #fffdf8;
+  border: 1px solid #dfcfb3;
+  border-radius: 14px;
+  box-shadow: 0 7px 20px rgba(70, 52, 27, .045);
+  font-size: 12px;
+}
+.dashboard .workspace-stat strong {
+  color: #30271c;
+  font: 700 27px/1 'DM Sans', sans-serif;
+}
+.dashboard .workspace-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.dashboard .workspace-card {
+  min-width: 0;
+  padding: 25px;
+  background: #fffdf9;
+  border: 1px solid #ddc9a8;
+  border-radius: 16px;
+  box-shadow: 0 10px 28px rgba(57, 43, 23, .055);
+}
+.dashboard .workspace-card-wide { grid-column: 1 / -1; }
+.dashboard .workspace-card h2 {
+  margin: 0 0 19px;
+  padding-bottom: 13px;
+  color: #30271e;
+  border-bottom: 1px solid #eee3d1;
+  font-size: 22px;
+  letter-spacing: -.5px;
+}
+.dashboard .workspace-card h2 small { color: #9b7949; font-size: 12px; }
+.dashboard .workspace-card .booking-form {
+  padding: 0;
+  gap: 16px;
+  background: transparent;
+}
+.dashboard .workspace-card .booking-form input,
+.dashboard .workspace-card .booking-form select,
+.dashboard .workspace-card .booking-form textarea {
+  border: 1px solid #e3d8c6;
+  border-radius: 7px;
+  background: #fff;
+}
+.dashboard .workspace-card .booking-form input:focus,
+.dashboard .workspace-card .booking-form select:focus,
+.dashboard .workspace-card .booking-form textarea:focus {
+  outline: 2px solid rgba(190, 151, 91, .22);
+  border-color: #b99561;
+}
+.dashboard .workspace-card .tag {
+  display: inline-flex;
+  margin: 3px 5px 5px 0;
+  padding: 7px 11px;
+  border: 1px solid #e5d5ba;
+  border-radius: 999px;
+  background: #f7f0e4;
+  color: #76572f;
+}
+.dashboard .workspace-card hr {
+  border: 0;
+  border-top: 1px solid #eee6d9;
+  margin: 15px 0;
+}
+.dashboard .workspace-card .unread {
+  padding: 13px 15px;
+  border-left: 3px solid #bd965e;
+  border-radius: 0 8px 8px 0;
+  background: #f8f1e6;
+}
+.dashboard .service-listing {
+  padding: 17px 0;
+  border-bottom: 1px solid #eee6d9;
+}
+.dashboard .service-listing:last-child { border-bottom: 0; }
+.dashboard .service-listing h3 {
+  margin: 0 0 6px;
+  font-size: 17px;
+}
+.dashboard .service-listing p { margin: 5px 0; }
+.dashboard .workspace-card article.workspace-card {
+  padding: 13px;
+  background: #f8f4ec;
+  border-color: #e5d5ba;
+  box-shadow: none;
+}
+.dashboard .workspace-card article.workspace-card img,
+.dashboard .workspace-card article.workspace-card video {
+  display: block;
+  width: 100%;
+  max-height: 300px;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  padding: 6px;
+  border: 1px solid #d2b783;
+  border-radius: 11px;
+  background: #fffdf8;
+}
+.dashboard .workspace-card article.workspace-card h3 { font-size: 16px; }
+.dashboard .mini-btn {
+  border-radius: 6px;
+  background: #28231c;
+  padding: 10px 14px;
+}
+.dashboard .mini-btn:hover { background: #8b693b; }
+.dashboard .workspace-card .muted { color: #786f62; }
+.dashboard .workspace-card .two { gap: 14px; }
+.dashboard .workspace-card .booking-form .btn { align-self: flex-start; border-radius: 7px; }
+
+/* A refined frame around marketplace photography and service imagery */
+.hero-photo-wrap {
+  padding: 9px;
+  border: 1px solid rgba(218, 190, 145, .78);
+  background: linear-gradient(145deg, #f4e8d1, #8d7048 55%, #e9d9bb);
+  box-shadow: 0 22px 55px rgba(0,0,0,.22);
+}
+.hero-photo-wrap .hero-main {
+  border: 1px solid rgba(255,255,255,.45);
+}
+.showcase-card {
+  overflow: hidden;
+  border: 1px solid #ddc9a8;
+  border-radius: 13px;
+  background: #fffdf8;
+  box-shadow: 0 9px 24px rgba(57,43,23,.065);
+  transition: transform .22s ease, box-shadow .22s ease;
+}
+.showcase-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 34px rgba(57,43,23,.12);
+}
+.showcase-image {
+  display: block;
+  padding: 7px;
+  background: linear-gradient(145deg, #f6eddf, #d7bd91);
+  border-bottom: 1px solid #ddc9a8;
+}
+.showcase-image img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border: 1px solid rgba(255,255,255,.85);
+  border-radius: 7px;
+}
+.showcase-card-body { background: #fffdf8; }
+.showcase-empty {
+  border: 1px solid #ddc9a8;
+  border-radius: 13px;
+  background: #fbf7ef;
+  overflow: hidden;
+}
+.showcase-empty-image {
+  padding: 8px;
+  background: linear-gradient(145deg, #f6eddf, #d7bd91);
+}
+.showcase-shelf { border-bottom-color: #e7dccb; }
+.showcase-see-all { color: #8c6938; }
+@media (max-width: 760px) {
+  .dashboard { padding: 30px 5%; }
+  .dashboard .workspace-hero { align-items: flex-start; flex-direction: column; padding: 23px 20px; }
+  .dashboard .workspace-stat { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .dashboard .workspace-stat span { min-height: 78px; padding: 13px; }
+  .dashboard .workspace-grid { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .dashboard .workspace-card-wide { grid-column: auto; }
+  .dashboard .workspace-card { padding: 19px; border-radius: 13px; }
+  .dashboard .workspace-card h2 { font-size: 20px; }
+  .dashboard .workspace-card .two { grid-template-columns: minmax(0, 1fr); }
+  .dashboard .workspace-card article.workspace-card { padding: 11px; }
+  .hero-photo-wrap { padding: 6px; }
+  .showcase-image { padding: 6px; }
+}
