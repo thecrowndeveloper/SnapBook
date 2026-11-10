@@ -35,7 +35,7 @@
     </label>
     <label class="search-field category-field">
       <span>CATEGORY</span>
-      <select name="category">
+      <select name="category" onchange="this.form.requestSubmit()">
         <option value="">All categories</option>
         {% for category in categories %}
           <option value="{{ category.slug }}" {% if category_slug == category.slug %}selected{% endif %}>{{ category.name }}</option>
@@ -72,9 +72,9 @@
     {% endfor %}
   {% else %}
     <div class="showcase-empty">
+      <img class="showcase-empty-image" src="{{ url_for('static', filename='images/' ~ fallback) }}" alt="{{ category_slug|replace('-', ' ')|title }} collection" loading="lazy">
       <span>CURATED FOR YOUR NEXT IDEA</span>
       <p>New services are being added to this collection.</p>
-      <a href="{{ url_for('home', category=category_slug) }}">Explore this category</a>
     </div>
   {% endif %}
 {% endmacro %}
@@ -106,29 +106,32 @@
     {% endfor %}
   {% else %}
     <div class="showcase-empty">
+      <img class="showcase-empty-image" src="{{ url_for('static', filename='images/' ~ fallback) }}" alt="{{ category_slug|replace('-', ' ')|title }} collection" loading="lazy">
       <span>CURATED FOR YOUR NEXT IDEA</span>
       <p>New listings are being added to this collection.</p>
-      <a href="{{ url_for('home', category=category_slug) }}">Explore this category</a>
     </div>
   {% endif %}
 {% endmacro %}
 
 {% set showcases = [
-  ('photography', '01 / CREATE', 'Photography', 'Portraits, events, products and the moments worth keeping.', 'photo2.jpg', 'services'),
-  ('videography', '02 / TELL STORIES', 'Videography', 'Films, events, reels and visual storytelling.', 'photo6.jpg', 'services'),
-  ('media-equipment', '03 / GET EQUIPPED', 'Media equipment', 'Cameras, lighting, sound and production essentials.', 'photo5.jpg', 'products'),
-  ('artwork', '04 / MAKE IT ART', 'Art for Sale', 'Discover original art and creative pieces from local makers.', 'photo3.jpg', 'products'),
-  ('costume-rentals', '05 / STYLE THE MOMENT', 'Costume rentals', 'Find the right look for shoots, events and productions.', 'photo7.jpg', 'products'),
-  ('spaces-studios', '06 / FIND YOUR SPACE', 'Spaces & Studios', 'Studios, event venues and spaces for content creation.', 'photo4.jpg', 'services')
+  ('photography', '01 / CREATE', 'Photography', 'Portraits, events, products and the moments worth keeping.', 'categories/photography.jpg', 'services'),
+  ('videography', '02 / TELL STORIES', 'Videography', 'Films, events, reels and visual storytelling.', 'categories/Videography.jpg', 'services'),
+  ('media-equipment', '03 / GET EQUIPPED', 'Media equipment', 'Cameras, lighting, sound and production essentials.', 'categories/Media Equipment.jpg', 'products'),
+  ('artwork', '04 / MAKE IT ART', 'Art for Sale', 'Discover original art and creative pieces from local makers.', 'categories/Artsale.jpg', 'products'),
+  ('costume-rentals', '05 / STYLE THE MOMENT', 'Costume rentals', 'Find the right look for shoots, events and productions.', 'categories/costumerentals.jpg', 'products'),
+  ('spaces-studios', '06 / FIND YOUR SPACE', 'Spaces & Studios', 'Studios, event venues and spaces for content creation.', 'categories/Studio&Space.jpg', 'services'),
+  ('photo-framing', '07 / FRAME YOUR STORY', 'Photo Framing', 'Give your favourite photographs and artwork a beautiful finish.', 'categories/Photoframing.jpg', 'services'),
+  ('interior-design', '08 / SHAPE YOUR SPACE', 'Interior Design', 'Find creative professionals to transform homes, offices and spaces.', 'categories/Interiordesign.jpg', 'services')
 ] %}
 
 <section class="showcase-library" id="categories">
   <div class="showcase-intro">
-    <p class="eyebrow">ONE MARKETPLACE. SIX WAYS TO CREATE.</p>
+    <p class="eyebrow">ONE MARKETPLACE. EIGHT WAYS TO CREATE.</p>
     <h2>Find what brings your idea to life.</h2>
     <p>Browse each collection, discover the work, and connect with the people behind it.</p>
   </div>
   {% for slug, eyebrow, title, description, fallback, kind in showcases %}
+    {% if not category_slug or category_slug == slug %}
       <section class="showcase-shelf" id="shelf-{{ slug }}">
         <div class="showcase-heading">
           <div>
@@ -139,6 +142,7 @@
           <a class="showcase-see-all" href="{{ url_for('home', category=slug, city=city) }}">Explore category</a>
         </div>
         <div class="showcase-track-wrap">
+          <button class="showcase-arrow showcase-prev" type="button" aria-label="Scroll {{ title }} left" data-scroll="left">‹</button>
           <div class="showcase-track" data-showcase-track>
             {% if kind == 'services' %}
               {{ service_showcase(showcase_services.get(slug, []), fallback, slug) }}
@@ -146,8 +150,10 @@
               {{ product_showcase(showcase_products.get(slug, []), fallback, slug) }}
             {% endif %}
           </div>
+          <button class="showcase-arrow showcase-next" type="button" aria-label="Scroll {{ title }} right" data-scroll="right">›</button>
         </div>
       </section>
+    {% endif %}
   {% endfor %}
 </section>
 
