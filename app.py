@@ -613,7 +613,11 @@ def send_verification_email(user):
 
 def send_password_reset_email(user):
     token = account_token_serializer().dumps(
-        {"user_id": user["id"], "email": user["email"]},
+        {
+            "user_id": user["id"],
+            "email": user["email"],
+            "password_hash": user["password_hash"],
+        },
         salt="reset-password"
     )
     link = url_for("reset_password", token=token, _external=True)
@@ -1317,8 +1321,9 @@ def reset_password(token):
             "SELECT * FROM users WHERE id = ? AND email = ?",
             (payload.get("user_id"), payload.get("email"))
         ).fetchone()
-    if not user:
-        abort(404)
+    if not user or payload.get("password_hash") != user["password_hash"]:
+        flash("That password reset link is no longer valid. Request a new one.", "error")
+        return redirect(url_for("forgot_password"))
 
     if request.method == "POST":
         password = request.form.get("password", "")
