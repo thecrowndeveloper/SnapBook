@@ -85,3 +85,24 @@ Counsel should confirm:
 4. Obtain written legal approval of final policy versions.
 5. Keep live payments disabled until provider and counsel approval.
 6. Merge only after review and regression tests. Do not modify or reset the production SQLite database or Railway volume as part of this work.
+
+
+## Email verification and password recovery
+
+Email/password registration now creates the account in a pending-verification state. The user is not allowed to log in until the email verification link is used. Verification links expire after 24 hours. Password reset links expire after one hour and are invalidated when the password is changed.
+
+Configure the following Railway service variables before enabling email registration for real users:
+
+- `SMTP_HOST` — SMTP server hostname.
+- `SMTP_PORT` — currently configured for STARTTLS, normally `587`.
+- `SMTP_USERNAME` — SMTP account username.
+- `SMTP_PASSWORD` — SMTP credential or provider-issued API password; keep it secret.
+- `MAIL_FROM` — verified sender address, for example `OneCre8 Media <accounts@your-domain>`.
+
+The sender domain should be authenticated with the email provider (SPF and DKIM; configure DMARC as advised by the provider). Use a transactional email provider for production rather than a personal mailbox. Never put SMTP credentials in GitHub or source files.
+
+If SMTP is not configured or delivery fails, account creation will not silently sign the user in. The user sees a message directing them to support; configure and test SMTP before public registration is opened.
+
+## CI verification
+
+A GitHub Actions workflow was added at `.github/workflows/onecre8-auth-checks.yml`. It compiles the Flask application and smoke-tests the registration pages, legal pages, legal acceptance records, verification gate, email verification, password login and one-time password-reset behavior. A successful workflow run must be checked before the pull request is approved.
