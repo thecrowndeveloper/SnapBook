@@ -2847,3 +2847,90 @@ footer .footer-logo { font-size: 21px; }
 }
 .showcase-empty > span { margin: 22px 18px 0; }
 .showcase-empty p { margin: 9px 18px 18px; }
+
+
+/* OneCre8 mobile navigation fix — explicit visible hamburger */
+.mobile-menu-toggle { display: none !important; }
+@media (max-width: 700px) {
+  .topbar {
+    min-height: 68px !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+    position: relative !important;
+  }
+  .mobile-menu-toggle {
+    display: flex !important;
+    flex: 0 0 44px !important;
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    padding: 10px !important;
+    margin: 0 0 0 auto !important;
+    border: 1px solid #d6a75f !important;
+    border-radius: 8px !important;
+    background: #171715 !important;
+    color: #fff !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-direction: column !important;
+    gap: 5px !important;
+    cursor: pointer !important;
+    position: relative !important;
+    z-index: 1002 !important;
+    font-size: 0 !important;
+    line-height: 1 !important;
+    box-shadow: none !important;
+  }
+  .mobile-menu-toggle span {
+    display: block !important;
+    width: 21px !important;
+    height: 2px !important;
+    min-height: 2px !important;
+    flex: 0 0 2px !important;
+    background: #fff !important;
+    border-radius: 2px !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+  .topbar nav.primary-navigation {
+    display: none !important;
+    position: absolute !important;
+    top: calc(100% + 1px) !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    padding: 18px 5% 22px !important;
+    margin: 0 !important;
+    background: #fff !important;
+    border-bottom: 1px solid #e8e4dc !important;
+    box-shadow: 0 12px 22px rgba(0,0,0,.12) !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0 !important;
+    z-index: 1001 !important;
+  }
+  .topbar nav.primary-navigation.is-open { display: flex !important; }
+  .topbar nav.primary-navigation a,
+  .topbar nav.primary-navigation .nav-link-button {
+    display: block !important;
+    width: 100% !important;
+    padding: 13px 4px !important;
+    text-align: left !important;
+    font-size: 15px !important;
+    color: #171715 !important;
+    border-bottom: 1px solid #eee9df !important;
+  }
+  .topbar nav.primary-navigation .nav-cta {
+    display: block !important;
+    margin-top: 10px !important;
+    padding: 12px 16px !important;
+    text-align: center !important;
+    background: #171715 !important;
+    color: #fff !important;
+    border: 0 !important;
+  }
+  .topbar nav.primary-navigation .nav-logout { display: block !important; width: 100% !important; }
+}
