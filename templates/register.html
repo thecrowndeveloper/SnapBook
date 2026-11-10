@@ -105,7 +105,7 @@
         providerFields.hidden = !isProvider;
 
         providerFields.querySelectorAll(
-            'input:not([type="checkbox"]), textarea'
+            'input:not([type="checkbox"]):not([type="file"]), textarea'
         ).forEach(field => {
             field.required = isProvider;
         });
