@@ -1,0 +1,149 @@
+name: OneCre8 account and legal checks
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "app.py"
+      - "requirements.txt"
+      - "templates/**"
+      - ".github/workflows/onecre8-auth-checks.yml"
+  workflow_dispatch:
+
+jobs:
+  auth-and-legal-smoke-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Compile application
+        run: python -m py_compile app.py
+
+      - name: Test account, legal acceptance and security routes
+        env:
+          SECRET_KEY: onecre8-ci-test-secret-not-for-production
+          COOKIE_SECURE: "false"
+          RAILWAY_VOLUME_MOUNT_PATH: ${{ runner.temp }}/onecre8-test-volume
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          import sqlite3
+          import app as onecre8
+
+          onecre8.app.config.update(TESTING=True, WTF_CSRF_ENABLED=False)
+          client = onecre8.app.test_client()
+
+          for path in (
+              "/register",
+              "/login",
+              "/legal/terms",
+              "/legal/privacy",
+              "/legal/client-policy",
+              "/legal/professional-agreement",
+              "/legal/content-policy",
+              "/forgot-password",
+              "/resend-verification",
+          ):
+              response = client.get(path)
+              assert response.status_code == 200, (path, response.status_code)
+
+          payload = {
+              "role": "client",
+              "name": "CI Test Client",
+              "email": "ci-client@example.test",
+              "password": "CorrectHorseBattery9!",
+              "accept_terms": "yes",
+              "accept_privacy": "yes",
+              "accept_content_policy": "yes",
+              "accept_client_policy": "yes",
+          }
+          response = client.post("/register", data=payload, follow_redirects=False)
+          assert response.status_code == 302, response.status_code
+
+          with onecre8.connect() as con:
+              user = con.execute(
+                  "SELECT * FROM users WHERE email = ?",
+                  ("ci-client@example.test",)
+              ).fetchone()
+              assert user is not None
+              assert user["auth_provider"] == "email_pending"
+              accepted = con.execute(
+                  "SELECT document_key, document_version FROM legal_acceptances WHERE user_id = ?",
+                  (user["id"],)
+              ).fetchall()
+              assert len(accepted) == 4, len(accepted)
+              assert {row["document_key"] for row in accepted} == {
+                  "terms", "privacy", "content-policy", "client-policy"
+              }
+
+          response = client.post("/login", data={
+              "email": "ci-client@example.test",
+              "password": "CorrectHorseBattery9!",
+          }, follow_redirects=False)
+          assert response.status_code == 302
+          assert "/resend-verification" in response.headers["Location"]
+
+          verification_token = onecre8.account_token_serializer().dumps(
+              {"user_id": user["id"], "email": user["email"]},
+              salt="verify-email"
+          )
+          response = client.get(
+              f"/verify-email/{verification_token}",
+              follow_redirects=False
+          )
+          assert response.status_code == 302
+          with onecre8.connect() as con:
+              verified = con.execute(
+                  "SELECT email_verified_at, auth_provider FROM users WHERE id = ?",
+                  (user["id"],)
+              ).fetchone()
+              assert verified["email_verified_at"]
+              assert verified["auth_provider"] == "email"
+
+          response = client.post("/login", data={
+              "email": "ci-client@example.test",
+              "password": "CorrectHorseBattery9!",
+          }, follow_redirects=False)
+          assert response.status_code == 302
+
+          reset_token = onecre8.account_token_serializer().dumps(
+              {
+                  "user_id": user["id"],
+                  "email": user["email"],
+                  "password_hash": user["password_hash"],
+              },
+              salt="reset-password"
+          )
+          response = client.post(
+              f"/reset-password/{reset_token}",
+              data={
+                  "password": "NewCorrectHorseBattery9!",
+                  "confirm_password": "NewCorrectHorseBattery9!",
+              },
+              follow_redirects=False
+          )
+          assert response.status_code == 302
+          response = client.get(
+              f"/reset-password/{reset_token}",
+              follow_redirects=False
+          )
+          assert response.status_code == 302
+          assert "/forgot-password" in response.headers["Location"]
+
+          assert onecre8.LAUNCH_POLICY["payments_enabled"] is False
+          assert onecre8.LAUNCH_POLICY["commission_rate"] == 0.10
+          assert onecre8.LAUNCH_POLICY["delivery_review_hours"] == 72
+          print("OneCre8 account and legal smoke tests passed.")
+          PY
