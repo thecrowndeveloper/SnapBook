@@ -2748,3 +2748,38 @@ footer .footer-logo { font-size: 21px; }
   .showcase-arrow { display: none !important; }
   .page-nav { font-size: 11px !important; font-weight: 700; }
 }
+
+/* MOBILE HERO IMAGE: preserve the complete photograph */
+@media (max-width: 700px) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hero-photo-wrap {
+    width: 100%;
+    min-height: 0;
+    height: auto;
+    margin: 0 0 20px;
+    overflow: visible;
+  }
+
+  .hero-main {
+    display: block;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    object-fit: contain;
+    object-position: center;
+  }
+}
+
+@media (max-width: 380px) {
+  .hero-photo-caption {
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    font-size: 7px;
+    letter-spacing: 1px;
+  }
+}
