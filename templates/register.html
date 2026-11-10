@@ -23,6 +23,7 @@
 <div class="auth-divider"></div><p class="eyebrow">CREATE WITH EMAIL</p>
 <label>Email address<input type="email" name="email" placeholder="you@example.com"></label>
 <label>Password<input type="password" name="password" minlength="8" placeholder="At least 8 characters"></label>
+<p class="muted">After registration, we’ll send a verification link to your email. You must verify it before logging in.</p>
 <div class="legal-acceptance"><p><strong>Before creating your account</strong></p>
 <label class="legal-check"><input type="checkbox" name="accept_terms" value="yes" required> I agree to the <a href="{{ url_for('legal_document', slug='terms') }}" target="_blank" rel="noopener">General Terms and Conditions</a>.</label>
 <label class="legal-check"><input type="checkbox" name="accept_privacy" value="yes" required> I have read the <a href="{{ url_for('legal_document', slug='privacy') }}" target="_blank" rel="noopener">Privacy Policy</a>.</label>
