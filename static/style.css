@@ -3197,3 +3197,12 @@ footer .footer-logo { font-size: 21px; }
     z-index: 0;
   }
 }
+
+/* Legal acceptance and draft policy pages */
+.legal-acceptance{margin:22px 0;padding:18px;border:1px solid var(--line);border-radius:14px;background:#fbfaf7}
+.legal-check{display:flex;align-items:flex-start;gap:10px;margin:13px 0;font-size:13px;line-height:1.6}
+.legal-check input{flex:0 0 auto;margin-top:4px}
+.legal-check a{color:var(--gold-dark);text-decoration:underline}
+.legal-draft-notice{margin:20px 0;padding:16px;border:1px solid #d9b979;border-radius:12px;background:#fff8e9;color:#6e5125;line-height:1.65;font-size:13px}
+.legal-section{margin:24px 0}.legal-section h2{font-size:17px;margin-bottom:8px}
+.legal-section p{color:var(--muted);line-height:1.8;font-size:14px}.legal-document{max-width:820px}
