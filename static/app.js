@@ -15,4 +15,26 @@ document.addEventListener("DOMContentLoaded", () => {
     sessions.addEventListener("change", update);
     update();
   }
+
+  const pageNav = document.querySelector(".page-nav");
+  if (pageNav) {
+    const updatePageNav = () => {
+      pageNav.classList.toggle("is-visible", window.scrollY > 240);
+    };
+    window.addEventListener("scroll", updatePageNav, { passive: true });
+    pageNav.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+    updatePageNav();
+  }
+
+  document.querySelectorAll(".showcase-track-wrap").forEach((wrap) => {
+    const track = wrap.querySelector("[data-showcase-track]");
+    if (!track) return;
+    wrap.querySelectorAll("[data-scroll]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const direction = button.dataset.scroll === "right" ? 1 : -1;
+        track.scrollBy({ left: direction * track.clientWidth * 0.85, behavior: "smooth" });
+      });
+    });
+  });
 });
+

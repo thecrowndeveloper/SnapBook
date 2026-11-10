@@ -554,6 +554,80 @@ def home():
         creative_professionals = con.execute(
             provider_query, provider_args
         ).fetchall()
+
+        service_query = """
+            SELECT services.id, services.title, services.description,
+                   services.pricing_mode, services.price,
+                   categories.name AS category_name,
+                   providers.id AS provider_id,
+                   providers.display_name, providers.business_name,
+                   providers.city, providers.profile_image
+            FROM services
+            JOIN categories ON categories.id = services.category_id
+            JOIN providers ON providers.id = services.provider_id
+            WHERE services.is_active = 1
+        """
+        service_args = []
+        if city:
+            service_query += " AND providers.city LIKE ?"
+            service_args.append(f"%{city}%")
+        if category_slug:
+            service_query += " AND categories.slug = ?"
+            service_args.append(category_slug)
+        service_query += " ORDER BY services.created_at DESC LIMIT 24"
+        marketplace_services = con.execute(
+            service_query, service_args
+        ).fetchall()
+
+        # Small, category-specific homepage previews keep discovery curated.
+        showcase_services = {}
+        for slug in ("photography", "videography", "spaces-studios"):
+            showcase_services[slug] = con.execute("""
+                SELECT services.id, services.title, services.description,
+                       services.pricing_mode, services.price,
+                       categories.name AS category_name,
+                       providers.id AS provider_id,
+                       providers.display_name, providers.business_name,
+                       providers.city, providers.profile_image,
+                       COALESCE(
+                           (SELECT '/portfolio-media/' || portfolio_items.filename
+                            FROM portfolio_items
+                            WHERE portfolio_items.provider_id = providers.id
+                              AND portfolio_items.media_type = 'image'
+                            ORDER BY portfolio_items.created_at DESC
+                            LIMIT 1),
+                           providers.profile_image
+                       ) AS preview_image
+                FROM services
+                JOIN categories ON categories.id = services.category_id
+                JOIN providers ON providers.id = services.provider_id
+                WHERE services.is_active = 1
+                  AND categories.slug = ?
+                  AND (? = '' OR providers.city LIKE ?)
+                ORDER BY services.created_at DESC
+                LIMIT 4
+            """, (slug, city, f"%{city}%")).fetchall()
+
+        showcase_products = {}
+        for slug in ("media-equipment", "artwork", "costume-rentals"):
+            showcase_products[slug] = con.execute("""
+                SELECT products.id, products.title, products.description,
+                       products.listing_type, products.price,
+                       products.quantity_available, products.image,
+                       categories.name AS category_name,
+                       providers.id AS provider_id,
+                       providers.display_name, providers.business_name,
+                       providers.city, providers.profile_image
+                FROM products
+                JOIN categories ON categories.id = products.category_id
+                JOIN providers ON providers.id = products.provider_id
+                WHERE products.is_active = 1
+                  AND categories.slug = ?
+                  AND (? = '' OR providers.city LIKE ?)
+                ORDER BY products.created_at DESC
+                LIMIT 4
+            """, (slug, city, f"%{city}%")).fetchall()
+
         categories = con.execute(
             "SELECT id, name, slug FROM categories ORDER BY name"
         ).fetchall()
@@ -562,6 +636,9 @@ def home():
         "index.html",
         photographers=photographers,
         creative_professionals=creative_professionals,
+        marketplace_services=marketplace_services,
+        showcase_services=showcase_services,
+        showcase_products=showcase_products,
         categories=categories,
         locations=NIGERIAN_LOCATIONS,
         city=city,
@@ -648,6 +725,37 @@ def register():
                     "register.html", role=role, categories=categories
                 )
 
+            provider_photo = request.files.get("profile_image")
+            if provider_photo and provider_photo.filename:
+                allowed_image_extensions = {".jpg", ".jpeg", ".png", ".webp"}
+                photo_extension = Path(
+                    secure_filename(provider_photo.filename)
+                ).suffix.lower()
+                if photo_extension not in allowed_image_extensions:
+                    flash("Profile picture must be JPG, PNG or WebP.", "error")
+                    return render_template(
+                        "register.html", role=role, categories=categories
+                    )
+                provider_photo.stream.seek(0, os.SEEK_END)
+                photo_size = provider_photo.stream.tell()
+                provider_photo.stream.seek(0)
+                if photo_size > 5 * 1024 * 1024:
+                    flash("Profile pictures must be 5 MB or smaller.", "error")
+                    return render_template(
+                        "register.html", role=role, categories=categories
+                    )
+                signature = provider_photo.stream.read(12)
+                provider_photo.stream.seek(0)
+                valid_image = (
+                    (photo_extension in {".jpg", ".jpeg"} and signature.startswith(b"\xff\xd8\xff"))
+                    or (photo_extension == ".png" and signature.startswith(b"\x89PNG\r\n\x1a\n"))
+                    or (photo_extension == ".webp" and signature[:4] == b"RIFF" and signature[8:12] == b"WEBP")
+                )
+                if not valid_image:
+                    flash("The selected profile picture is not a valid image.", "error")
+                    return render_template(
+                        "register.html", role=role, categories=categories
+                    )
             provider_data = (name, business_name, bio, city)
 
         photographer_data = None
@@ -723,6 +831,20 @@ def register():
                         (provider_id, category_id)
                         for category_id in selected_category_ids
                     ])
+
+                    if provider_photo and provider_photo.filename:
+                        photo_name = (
+                            f"profile-{provider_id}-{uuid4().hex}"
+                            f"{photo_extension}"
+                        )
+                        provider_photo.save(
+                            Path(app.config["PORTFOLIO_UPLOAD_FOLDER"]) / photo_name
+                        )
+                        con.execute("""
+                            UPDATE providers
+                            SET profile_image = ?
+                            WHERE id = ?
+                        """, ("/profile-media/" + photo_name, provider_id))
 
                 user_row = con.execute(
                     "SELECT * FROM users WHERE id = ?", (user_id,)
@@ -1075,6 +1197,87 @@ def create_service():
 
 
 
+
+@app.route("/service/<int:service_id>")
+def service_detail(service_id):
+    with connect() as con:
+        service = con.execute("""
+            SELECT services.*, categories.name AS category_name,
+                   providers.id AS provider_id,
+                   providers.display_name, providers.business_name,
+                   providers.city, providers.bio, providers.profile_image
+            FROM services
+            JOIN categories ON categories.id = services.category_id
+            JOIN providers ON providers.id = services.provider_id
+            WHERE services.id = ? AND services.is_active = 1
+        """, (service_id,)).fetchone()
+    if not service:
+        abort(404)
+    return render_template("service_detail.html", service=service)
+
+
+@app.route("/provider/profile/update", methods=["POST"])
+@login_required
+def update_provider_profile():
+    role_required("provider")
+    display_name = request.form.get("display_name", "").strip()
+    business_name = request.form.get("business_name", "").strip()
+    bio = request.form.get("bio", "").strip()
+    city = request.form.get("city", "").strip()
+    profile_image = request.form.get("profile_image", "").strip()
+    profile_picture = request.files.get("profile_picture")
+    new_picture_path = None
+
+    if profile_picture and profile_picture.filename:
+        suffix = Path(secure_filename(profile_picture.filename)).suffix.lower()
+        if suffix not in {".jpg", ".jpeg", ".png", ".webp"}:
+            flash("Profile pictures must be JPG, PNG or WEBP.", "error")
+            return redirect(url_for("provider_dashboard"))
+        filename = "profile-" + uuid4().hex + suffix
+        new_picture_path = PORTFOLIO_UPLOAD_FOLDER / filename
+        profile_picture.save(new_picture_path)
+        with new_picture_path.open("rb") as image_file:
+            signature = image_file.read(12)
+        valid = (
+            (suffix in {".jpg", ".jpeg"} and signature.startswith(b"\xff\xd8\xff"))
+            or (suffix == ".png" and signature.startswith(b"\x89PNG\r\n\x1a\n"))
+            or (suffix == ".webp" and signature[:4] == b"RIFF" and signature[8:12] == b"WEBP")
+        )
+        if not valid:
+            new_picture_path.unlink(missing_ok=True)
+            flash("The selected profile picture is not a valid image.", "error")
+            return redirect(url_for("provider_dashboard"))
+        profile_image = "/profile-media/" + filename
+
+    if not display_name or not city or not bio:
+        flash("Your name, location and biography are required.", "error")
+        return redirect(url_for("provider_dashboard"))
+    if len(display_name) > 100 or len(business_name) > 120 or len(bio) > 1500 or len(city) > 100:
+        flash("Please shorten one or more profile fields.", "error")
+        return redirect(url_for("provider_dashboard"))
+    if profile_image and not (profile_image.startswith("https://") or profile_image.startswith("/profile-media/")):
+        flash("Profile image must be a secure HTTPS image address.", "error")
+        return redirect(url_for("provider_dashboard"))
+
+    with connect() as con:
+        provider = con.execute(
+            "SELECT id, profile_image FROM providers WHERE user_id = ?", (current_user.id,)
+        ).fetchone()
+        if not provider:
+            abort(404)
+        if not profile_image:
+            profile_image = provider["profile_image"] or ""
+        con.execute("""
+            UPDATE providers
+            SET display_name = ?, business_name = ?, bio = ?,
+                city = ?, profile_image = ?
+            WHERE id = ?
+        """, (display_name, business_name, bio, city, profile_image, provider["id"]))
+        con.execute("UPDATE users SET name = ? WHERE id = ?", (display_name, current_user.id))
+    flash("Your Creative Professional profile has been updated.", "success")
+    return redirect(url_for("provider_dashboard"))
+
+
 @app.route("/service/<int:service_id>/request", methods=["POST"])
 @login_required
 def request_service(service_id):
@@ -1373,6 +1576,20 @@ def portfolio_media(filename):
     )
 
 
+
+
+@app.route("/profile-media/<filename>")
+def profile_media(filename):
+    safe_filename = Path(filename).name
+    expected_path = "/profile-media/" + safe_filename
+    with connect() as con:
+        exists = con.execute(
+            "SELECT id FROM providers WHERE profile_image = ?",
+            (expected_path,)
+        ).fetchone()
+    if not exists:
+        abort(404)
+    return send_from_directory(app.config["PORTFOLIO_UPLOAD_FOLDER"], safe_filename)
 
 
 @app.route("/provider/<int:provider_id>")

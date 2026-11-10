@@ -3,131 +3,96 @@
 {% block title %}{{ provider.business_name or provider.display_name }} | OneCre8 Media{% endblock %}
 
 {% block content %}
-<section class="section">
-
-    <p class="eyebrow">CREATIVE PROFESSIONAL</p>
-
-    <div class="auth-card">
+<section class="public-profile-page">
+  <div class="public-profile-hero">
+    <div class="public-profile-cover"></div>
+    <div class="public-profile-heading">
+      {% if provider.profile_image %}
+        <img class="public-profile-avatar" src="{{ provider.profile_image }}" alt="{{ provider.display_name }} profile picture">
+      {% else %}
+        <div class="public-profile-avatar public-profile-avatar-fallback" aria-hidden="true">{{ (provider.business_name or provider.display_name)[:1]|upper }}</div>
+      {% endif %}
+      <div class="public-profile-intro">
+        <p class="eyebrow">ONECRE8 CREATIVE PROFESSIONAL</p>
         <h1>{{ provider.business_name or provider.display_name }}</h1>
-
-        {% if provider.business_name %}
-            <p class="muted">{{ provider.display_name }}</p>
-        {% endif %}
-
-        <p><strong>Location:</strong> {{ provider.city }}</p>
-
-        {% if provider.bio %}
-            <h3>About</h3>
-            <p>{{ provider.bio }}</p>
-        {% endif %}
-
-        {% if categories %}
-            <h3>Specialties</h3>
-            <ul>
-                {% for category in categories %}
-                    <li>{{ category.name }}</li>
-                {% endfor %}
-            </ul>
-        {% endif %}
+        {% if provider.business_name %}<p class="public-profile-owner">{{ provider.display_name }}</p>{% endif %}
+        <p class="public-profile-location"><span aria-hidden="true">⌖</span> {{ provider.city }}, Nigeria</p>
+      </div>
     </div>
+    {% if provider.bio %}<p class="public-profile-bio">{{ provider.bio }}</p>{% endif %}
+    {% if categories %}
+      <div class="public-specialties">
+        {% for category in categories %}<span>{{ category.name }}</span>{% endfor %}
+      </div>
+    {% endif %}
+    <nav class="public-profile-nav" aria-label="Profile sections">
+      <a href="#catalogue">Services catalogue <span>{{ services|length }}</span></a>
+      <a href="#portfolio">Portfolio <span>{{ portfolio_items|length }}</span></a>
+    </nav>
+  </div>
 
-    <div class="auth-card">
-        <h2>Services</h2>
-
-        {% if services %}
-            {% for service in services %}
-                <div>
-                    <h3>{{ service.title }}</h3>
-                    <p class="muted">{{ service.category_name }}</p>
-
-                    {% if service.description %}
-                        <p>{{ service.description }}</p>
-                    {% endif %}
-
-                    {% if service.pricing_mode == 'fixed' %}
-                        <p>
-                            Price: {{ "%.2f"|format(service.price) }}
-                        </p>
-                    {% else %}
-                        <p>Custom quote available</p>
-                    {% endif %}
-
-                    <p>Request method: {{ service.booking_mode|title }}</p>
-
-                    {% if current_user.is_authenticated and current_user.role == 'client' %}
-                        <form method="POST"
-                              action="{{ url_for('request_service', service_id=service.id) }}"
-                              class="booking-form">
-                            <input type="hidden" name="csrf_token"
-                                   value="{{ csrf_token() }}">
-                            <label>Preferred date
-                                <input type="date" name="requested_date" required>
-                            </label>
-                            <label>Message to the creative professional
-                                <textarea name="client_message" rows="3"
-                                          maxlength="2000"
-                                          placeholder="Share your requirements..."></textarea>
-                            </label>
-                            <button type="submit" class="btn btn-primary">
-                                Send service request
-                            </button>
-                        </form>
-                    {% elif not current_user.is_authenticated %}
-                        <p><a href="{{ url_for('login', next=request.path) }}">Log in as a client</a> to request this service.</p>
-                    {% endif %}
-                </div>
-                <hr>
-            {% endfor %}
-        {% else %}
-            <p class="muted">No services have been published yet.</p>
-        {% endif %}
+  <section class="public-content-section" id="catalogue">
+    <div class="public-section-heading">
+      <div><p class="eyebrow">WHAT I OFFER</p><h2>Services catalogue</h2></div>
+      <p class="muted">Explore available services, compare pricing and choose what suits your project.</p>
     </div>
+    {% if services %}
+      <div class="public-service-grid">
+        {% for service in services %}
+          <article class="public-service-card">
+            <div class="public-service-card-top">
+              <span class="public-service-category">{{ service.category_name }}</span>
+              <span class="public-service-mode">{{ service.booking_mode|title }}</span>
+            </div>
+            <h3>{{ service.title }}</h3>
+            <p class="public-service-description">{{ service.description or "Get in touch to discuss the details of this service." }}</p>
+            <div class="public-service-card-footer">
+              {% if service.pricing_mode == 'fixed' %}
+                <strong>₦{{ "{:,.0f}".format(service.price or 0) }}</strong>
+              {% else %}
+                <strong>Custom quote</strong>
+              {% endif %}
+              <a class="public-service-link" href="{{ url_for('service_detail', service_id=service.id) }}">View service <span aria-hidden="true">→</span></a>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="public-empty-state"><h3>Services coming soon</h3><p>This creative professional has not published any services yet. Check back soon.</p></div>
+    {% endif %}
+  </section>
 
-    <div class="auth-card">
-        <h2>Portfolio</h2>
-        <p class="muted">
-            Explore examples of this creative professional's previous work.
-        </p>
-
-        {% if portfolio_items %}
-            {% for item in portfolio_items %}
-                <div class="portfolio-item">
-                    <h3>{{ item.title }}</h3>
-
-                    {% if item.media_type == 'image' %}
-                        <img
-                            src="{{ url_for('portfolio_media', filename=item.filename) }}"
-                            alt="{{ item.title }}"
-                            loading="lazy"
-                            style="max-width: 100%; height: auto;">
-                    {% else %}
-                        <video
-                            controls
-                            preload="metadata"
-                            style="max-width: 100%; height: auto;">
-                            <source
-                                src="{{ url_for('portfolio_media', filename=item.filename) }}"
-                                type="video/mp4">
-                            Your browser does not support video playback.
-                        </video>
-                    {% endif %}
-
-                    {% if item.description %}
-                        <p>{{ item.description }}</p>
-                    {% endif %}
-                </div>
-                <hr>
-            {% endfor %}
-        {% else %}
-            <p class="muted">
-                This creative professional has not added portfolio items yet.
-            </p>
-        {% endif %}
+  <section class="public-content-section public-portfolio-section" id="portfolio">
+    <div class="public-section-heading">
+      <div><p class="eyebrow">SELECTED WORK</p><h2>Portfolio</h2></div>
+      <p class="muted">A collection of work and projects from this creative professional.</p>
     </div>
+    {% if portfolio_items %}
+      <div class="public-portfolio-grid">
+        {% for item in portfolio_items %}
+          <article class="public-portfolio-card">
+            <div class="public-portfolio-media">
+              {% if item.media_type == 'image' %}
+                <img src="{{ url_for('portfolio_media', filename=item.filename) }}" alt="{{ item.title }}" loading="lazy">
+              {% else %}
+                <video controls preload="metadata">
+                  <source src="{{ url_for('portfolio_media', filename=item.filename) }}" type="video/mp4">
+                  Your browser does not support video playback.
+                </video>
+              {% endif %}
+            </div>
+            <div class="public-portfolio-caption">
+              <h3>{{ item.title }}</h3>
+              {% if item.description %}<p>{{ item.description }}</p>{% endif %}
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="public-empty-state"><h3>Portfolio coming soon</h3><p>Portfolio examples will appear here when they are added.</p></div>
+    {% endif %}
+  </section>
 
-    <p>
-        <a href="{{ url_for('home') }}">Back to Explore</a>
-    </p>
-
+  <div class="public-profile-bottom"><a href="{{ url_for('home') }}">Back to Explore</a></div>
 </section>
 {% endblock %}
