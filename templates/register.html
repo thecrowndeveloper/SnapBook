@@ -11,7 +11,7 @@
             Join as a client or register as a creative professional.
         </p>
 
-        <form method="POST" class="booking-form">
+        <form method="POST" class="booking-form" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
             <label>Account type
@@ -63,6 +63,12 @@
                 <label>Short biography
                     <textarea name="bio" rows="3"
                               placeholder="Tell customers about your work and experience..."></textarea>
+                </label>
+
+                <label class="profile-upload-field">Professional profile picture
+                    <input type="file" name="profile_image"
+                           accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+                    <small class="muted">Use a clear photo of yourself or your creative business. JPG, PNG or WebP. Optional for now — you can add one later.</small>
                 </label>
 
                 <p><strong>What services do you offer?</strong></p>
