@@ -52,7 +52,7 @@
       <article class="showcase-card">
         <a class="showcase-image" href="{{ url_for('service_detail', service_id=item.id) }}">
           <img src="{{ item.preview_image or url_for('static', filename='images/' ~ fallback) }}" alt="{{ item.title }}" loading="lazy">
-          <span class="showcase-open">View service ↗</span>
+          <span class="showcase-open">View service</span>
         </a>
         <div class="showcase-card-body">
           <span class="showcase-type">{{ item.category_name }}</span>
@@ -74,7 +74,7 @@
     <div class="showcase-empty">
       <span>CURATED FOR YOUR NEXT IDEA</span>
       <p>New services are being added to this collection.</p>
-      <a href="{{ url_for('home', category=category_slug) }}">Explore this category ↗</a>
+      <a href="{{ url_for('home', category=category_slug) }}">Explore this category</a>
     </div>
   {% endif %}
 {% endmacro %}
@@ -86,7 +86,7 @@
 {% set product_image = item.image if item.image and (item.image.startswith("https://") or item.image.startswith("http://") or item.image.startswith("/static/")) else url_for("static", filename="images/" ~ fallback) %}
         <a class="showcase-image" href="{{ url_for('public_provider', provider_id=item.provider_id) }}">
           <img src="{{ product_image }}" alt="{{ item.title }}" loading="lazy">
-          <span class="showcase-open">Meet the seller ↗</span>
+          <span class="showcase-open">Meet the seller</span>
         </a>
         <div class="showcase-card-body">
           <span class="showcase-type">{{ item.category_name }} · {{ 'For rent' if item.listing_type == 'rental' else 'For sale' }}</span>
@@ -108,7 +108,7 @@
     <div class="showcase-empty">
       <span>CURATED FOR YOUR NEXT IDEA</span>
       <p>New listings are being added to this collection.</p>
-      <a href="{{ url_for('home', category=category_slug) }}">Explore this category ↗</a>
+      <a href="{{ url_for('home', category=category_slug) }}">Explore this category</a>
     </div>
   {% endif %}
 {% endmacro %}
@@ -129,7 +129,6 @@
     <p>Browse each collection, discover the work, and connect with the people behind it.</p>
   </div>
   {% for slug, eyebrow, title, description, fallback, kind in showcases %}
-    {% if not category_slug or category_slug == slug %}
       <section class="showcase-shelf" id="shelf-{{ slug }}">
         <div class="showcase-heading">
           <div>
@@ -140,7 +139,6 @@
           <a class="showcase-see-all" href="{{ url_for('home', category=slug, city=city) }}">Explore category</a>
         </div>
         <div class="showcase-track-wrap">
-          <button class="showcase-arrow showcase-prev" type="button" aria-label="Scroll {{ title }} left" data-scroll="left">‹</button>
           <div class="showcase-track" data-showcase-track>
             {% if kind == 'services' %}
               {{ service_showcase(showcase_services.get(slug, []), fallback, slug) }}
@@ -148,10 +146,8 @@
               {{ product_showcase(showcase_products.get(slug, []), fallback, slug) }}
             {% endif %}
           </div>
-          <button class="showcase-arrow showcase-next" type="button" aria-label="Scroll {{ title }} right" data-scroll="right">›</button>
         </div>
       </section>
-    {% endif %}
   {% endfor %}
 </section>
 
