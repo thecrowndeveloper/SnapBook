@@ -15,5 +15,15 @@ document.addEventListener("DOMContentLoaded", () => {
     sessions.addEventListener("change", update);
     update();
   }
+
+  const pageNav = document.querySelector(".page-nav");
+  if (pageNav) {
+    const updatePageNav = () => {
+      pageNav.classList.toggle("is-visible", window.scrollY > 240);
+    };
+    window.addEventListener("scroll", updatePageNav, { passive: true });
+    pageNav.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+    updatePageNav();
+  }
 });
 
