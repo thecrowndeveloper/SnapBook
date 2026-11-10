@@ -1,8 +1,11 @@
 
 import os
 import sqlite3
+import smtplib
+from email.message import EmailMessage
 from pathlib import Path
 from datetime import datetime
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 
 from flask import (
     Flask, render_template, request, redirect,
@@ -562,6 +565,67 @@ def init_db():
             """, seed)
 
 
+def account_token_serializer():
+    return URLSafeTimedSerializer(app.secret_key, salt="onecre8-account-security-v1")
+
+
+def send_account_email(recipient, subject, body):
+    """Send account security mail through configured SMTP; never log tokens."""
+    host = os.environ.get("SMTP_HOST")
+    username = os.environ.get("SMTP_USERNAME")
+    password = os.environ.get("SMTP_PASSWORD")
+    sender = os.environ.get("MAIL_FROM")
+    if not all((host, username, password, sender)):
+        app.logger.warning("Account email unavailable: SMTP settings are incomplete.")
+        return False
+
+    message = EmailMessage()
+    message["Subject"] = subject
+    message["From"] = sender
+    message["To"] = recipient
+    message.set_content(body)
+    try:
+        port = int(os.environ.get("SMTP_PORT", "587"))
+        with smtplib.SMTP(host, port, timeout=15) as smtp:
+            smtp.starttls()
+            smtp.login(username, password)
+            smtp.send_message(message)
+        return True
+    except (OSError, smtplib.SMTPException, ValueError):
+        app.logger.exception("Unable to send account security email.")
+        return False
+
+
+def send_verification_email(user):
+    token = account_token_serializer().dumps(
+        {"user_id": user["id"], "email": user["email"]},
+        salt="verify-email"
+    )
+    link = url_for("verify_email", token=token, _external=True)
+    return send_account_email(
+        user["email"],
+        "Verify your OneCre8 Media email",
+        "Welcome to OneCre8 Media. Verify your email address using this secure link. "
+        "The link expires in 24 hours. If you did not create this account, ignore this email.\n\n"
+        + link
+    )
+
+
+def send_password_reset_email(user):
+    token = account_token_serializer().dumps(
+        {"user_id": user["id"], "email": user["email"]},
+        salt="reset-password"
+    )
+    link = url_for("reset_password", token=token, _external=True)
+    return send_account_email(
+        user["email"],
+        "Reset your OneCre8 Media password",
+        "A password reset was requested for your OneCre8 Media account. "
+        "This secure link expires in 1 hour. If you did not request it, ignore this email.\n\n"
+        + link
+    )
+
+
 def record_legal_acceptances(con, user_id, role, method):
     document_keys = ["terms", "privacy", "content-policy"]
     document_keys.append(
@@ -953,8 +1017,8 @@ def register():
             with connect() as con:
                 cursor = con.execute("""
                     INSERT INTO users
-                    (name, email, password_hash, role, created_at)
-                    VALUES (?, ?, ?, ?, ?)
+                    (name, email, password_hash, role, created_at, auth_provider)
+                    VALUES (?, ?, ?, ?, ?, 'email_pending')
                 """, (
                     name,
                     email,
@@ -1010,16 +1074,11 @@ def register():
                     "SELECT * FROM users WHERE id = ?", (user_id,)
                 ).fetchone()
 
-            login_user(User(user_row))
-            flash("Your account has been created.", "success")
-
-            if role == "photographer":
-                return redirect(url_for("dashboard"))
-
-            if role == "provider":
-                return redirect(url_for("provider_dashboard"))
-
-            return redirect(url_for("my_bookings"))
+            if send_verification_email(user_row):
+                flash("Your account has been created. Check your email for a verification link before logging in.", "success")
+            else:
+                flash("Your account has been created, but email delivery is not configured yet. Please contact OneCre8 support to complete verification.", "error")
+            return redirect(url_for("login"))
         except sqlite3.IntegrityError:
             flash("An account with that email already exists.", "error")
 
@@ -1176,6 +1235,109 @@ def google_callback():
     return redirect(url_for("my_bookings"))
 
 
+@app.route("/verify-email/<token>")
+def verify_email(token):
+    try:
+        payload = account_token_serializer().loads(
+            token, salt="verify-email", max_age=86400
+        )
+    except SignatureExpired:
+        flash("That verification link has expired. Request a new one.", "error")
+        return redirect(url_for("resend_verification"))
+    except BadSignature:
+        abort(400)
+
+    with connect() as con:
+        user = con.execute(
+            "SELECT * FROM users WHERE id = ? AND email = ?",
+            (payload.get("user_id"), payload.get("email"))
+        ).fetchone()
+        if not user:
+            abort(404)
+        con.execute("""
+            UPDATE users
+            SET email_verified_at = ?, auth_provider = 'email'
+            WHERE id = ?
+        """, (datetime.utcnow().isoformat(), user["id"]))
+    flash("Your email has been verified. You can now log in.", "success")
+    return redirect(url_for("login"))
+
+
+@app.route("/resend-verification", methods=["GET", "POST"])
+def resend_verification():
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        with connect() as con:
+            user = con.execute(
+                "SELECT * FROM users WHERE email = ?", (email,)
+            ).fetchone()
+        # Keep response generic to avoid disclosing whether an account exists.
+        if user and user["auth_provider"] == "email_pending":
+            if send_verification_email(user):
+                flash("If the account needs verification, a new link has been sent.", "success")
+            else:
+                flash("Email delivery is temporarily unavailable. Please try again later.", "error")
+        else:
+            flash("If the account needs verification, a new link has been sent.", "success")
+        return redirect(url_for("login"))
+    return render_template("resend_verification.html")
+
+
+@app.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        with connect() as con:
+            user = con.execute(
+                "SELECT * FROM users WHERE email = ?", (email,)
+            ).fetchone()
+        if user and user["auth_provider"] != "google":
+            if not send_password_reset_email(user):
+                flash("Password reset email could not be sent right now. Please try again later.", "error")
+                return render_template("forgot_password.html")
+        flash("If an account exists for that email, password reset instructions have been sent.", "success")
+        return redirect(url_for("login"))
+    return render_template("forgot_password.html")
+
+
+@app.route("/reset-password/<token>", methods=["GET", "POST"])
+def reset_password(token):
+    try:
+        payload = account_token_serializer().loads(
+            token, salt="reset-password", max_age=3600
+        )
+    except SignatureExpired:
+        flash("That password reset link has expired. Request another one.", "error")
+        return redirect(url_for("forgot_password"))
+    except BadSignature:
+        abort(400)
+
+    with connect() as con:
+        user = con.execute(
+            "SELECT * FROM users WHERE id = ? AND email = ?",
+            (payload.get("user_id"), payload.get("email"))
+        ).fetchone()
+    if not user:
+        abort(404)
+
+    if request.method == "POST":
+        password = request.form.get("password", "")
+        confirmation = request.form.get("confirm_password", "")
+        if len(password) < 8:
+            flash("Your new password must contain at least 8 characters.", "error")
+        elif password != confirmation:
+            flash("The passwords do not match.", "error")
+        else:
+            with connect() as con:
+                con.execute(
+                    "UPDATE users SET password_hash = ? WHERE id = ?",
+                    (generate_password_hash(password), user["id"])
+                )
+            flash("Your password has been reset. Please log in.", "success")
+            return redirect(url_for("login"))
+    return render_template("reset_password.html")
+
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if current_user.is_authenticated:
@@ -1191,6 +1353,9 @@ def login():
             ).fetchone()
 
         if row and check_password_hash(row["password_hash"], password):
+            if row["auth_provider"] == "email_pending" and not row["email_verified_at"]:
+                flash("Please verify your email before logging in.", "error")
+                return redirect(url_for("resend_verification"))
             login_user(User(row))
             flash("Welcome back.", "success")
 
