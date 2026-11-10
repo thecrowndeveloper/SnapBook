@@ -2379,3 +2379,8 @@ footer .footer-logo { font-size: 21px; }
   .marketplace-category { aspect-ratio: 16 / 10; }
   .occasion-card { aspect-ratio: 16 / 10; }
 }
+
+
+/* Give the OneCre8 wordmark a warm metallic identity. */
+.topbar .logo, footer .footer-logo { color: var(--gold-dark) !important; }
+.topbar .logo i, footer .footer-logo i { color: var(--gold) !important; }
