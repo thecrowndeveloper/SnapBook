@@ -2145,3 +2145,237 @@ footer .footer-logo { color: var(--gold-dark) !important; }
 @media (max-width: 700px) {
   .page-nav { right: 16px; bottom: 18px; width: 44px; height: 44px; }
 }
+
+
+/* ONECRE8 QUIET-LUXURY PASS — homepage only; preserve existing photography and page structure. */
+:root {
+  --ink: #29251f;
+  --muted: #777168;
+  --paper: #f7f4ed;
+  --white: #fffefa;
+  --line: #e8e0d3;
+  --gold: #c9a36a;
+  --gold-dark: #967044;
+  --sand: #eee7da;
+}
+
+body { background: var(--white); color: var(--ink); }
+
+/* Calm editorial header and recognisable OneCre8 wordmark. */
+.topbar {
+  min-height: 76px;
+  background: var(--white);
+  border-bottom-color: var(--line);
+}
+.topbar .logo, footer .footer-logo {
+  color: var(--ink) !important;
+  font-size: 27px;
+  letter-spacing: -1.5px;
+}
+.topbar .logo i, footer .footer-logo i { color: var(--gold-dark) !important; }
+.topbar nav { gap: 30px; }
+.topbar nav a:hover, .topbar nav .nav-active { color: var(--gold-dark); }
+
+/* Keep the user's original hero photograph; lighten the surrounding canvas. */
+.hero {
+  background: var(--paper);
+  color: var(--ink);
+  min-height: 570px;
+  grid-template-columns: .92fr 1.08fr;
+  padding-bottom: 42px;
+}
+.hero-copy { padding: 66px 7% 55px 4%; }
+.hero .eyebrow { color: var(--gold-dark); }
+.hero .eyebrow span { background: var(--gold-dark); }
+.hero h1 {
+  color: var(--ink);
+  font-size: clamp(48px, 5.7vw, 76px);
+  letter-spacing: -3.5px;
+  line-height: 1.02;
+}
+.hero h1 em { color: var(--gold-dark); }
+.hero .sub { color: #6f6a61; max-width: 440px; }
+.hero-proof strong { color: var(--ink); }
+.hero-proof small { color: var(--muted); }
+.proof-avatars i { border-color: var(--paper); }
+.hero-photo-wrap {
+  min-height: 460px;
+  margin: 48px 0 14px 12px;
+  background: #e9e1d4;
+  box-shadow: 0 18px 45px rgba(52,43,29,.12);
+}
+.hero-main {
+  min-height: 460px;
+  object-position: center 35%;
+  filter: saturate(.88) contrast(1.01);
+}
+.hero-photo-wrap::after {
+  background: linear-gradient(180deg, rgba(25,22,18,0) 62%, rgba(25,22,18,.38));
+}
+.hero-photo-caption {
+  left: 20px;
+  bottom: 18px;
+  color: rgba(255,255,255,.92);
+  font-size: 9px;
+  letter-spacing: 1.3px;
+}
+
+/* Search: understated fields, compact category dropdown and a proportionate action. */
+.search-band {
+  padding: 27px 8%;
+  background: var(--white);
+  border-bottom: 1px solid var(--line);
+}
+.marketplace-search {
+  max-width: 1080px;
+  grid-template-columns: minmax(0,1fr) minmax(0,1fr) auto;
+  padding: 7px;
+  border: 1px solid var(--line);
+  box-shadow: 0 8px 26px rgba(41,34,23,.055);
+  border-radius: 4px;
+}
+.marketplace-search .search-field {
+  height: 58px;
+  min-height: 58px;
+  padding: 6px 19px;
+  gap: 2px;
+}
+.marketplace-search .search-field > span {
+  font-size: 9px;
+  line-height: 1.2;
+  letter-spacing: 1.35px;
+  color: var(--gold-dark);
+}
+.marketplace-search .search-field input,
+.marketplace-search .search-field select {
+  height: 30px;
+  min-height: 30px;
+  padding: 0;
+  font-size: 13px !important;
+  line-height: 1.3;
+  font-weight: 500;
+}
+.marketplace-search .search-submit {
+  width: auto;
+  min-width: 0;
+  height: 46px;
+  min-height: 46px;
+  align-self: center;
+  margin: 0 !important;
+  padding: 0 19px;
+  border-radius: 3px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 12px !important;
+  font-weight: 700;
+  gap: 8px;
+}
+.marketplace-search .search-submit:hover { background: var(--gold-dark); }
+.marketplace-search .search-submit span { font-size: 18px !important; }
+
+/* Softer section rhythm and editorial image cards. */
+.section { padding-top: 76px; padding-bottom: 76px; }
+.section-head { margin-bottom: 27px; }
+.section-head h2, .how-heading h2 { color: var(--ink); }
+.section-head .muted { max-width: 300px; }
+.category-section { background: var(--paper); }
+.marketplace-categories { gap: 15px; }
+.marketplace-category {
+  aspect-ratio: 4 / 4.8;
+  border: 0;
+  border-radius: 2px;
+  box-shadow: 0 5px 18px rgba(41,34,23,.07);
+}
+.marketplace-category::after {
+  background: linear-gradient(180deg, rgba(20,18,15,.02) 15%, rgba(20,18,15,.72) 100%);
+}
+.marketplace-category img { filter: saturate(.86); }
+.marketplace-number { color: #f2d9ad; }
+.marketplace-category b { font-size: 20px; line-height: 1.25; }
+.marketplace-category small { font-size: 11px; line-height: 1.55; }
+.marketplace-category i {
+  color: #f0d3a0;
+  border-top-color: rgba(255,255,255,.35);
+  font-size: 10px;
+}
+.occasion-section { background: var(--white); }
+.occasion-card {
+  border-radius: 2px;
+  aspect-ratio: 16 / 8.5;
+}
+.occasion-card b { font-size: clamp(22px, 2.5vw, 29px); }
+.directory-section { background: #f1ede5; }
+.photographer-card {
+  border: 1px solid #e8e0d3;
+  border-radius: 2px;
+  box-shadow: 0 4px 16px rgba(41,34,23,.035);
+}
+.photographer-card:hover {
+  box-shadow: 0 12px 28px rgba(41,34,23,.09);
+}
+.card-body { padding: 19px; }
+.text-link {
+  color: var(--gold-dark);
+  border-top-color: var(--line);
+  font-size: 11px;
+}
+.text-link:hover { color: var(--ink); }
+
+/* Dark espresso is reserved for the final invitation, not used as a page-wide background. */
+.closing { background: #29251f; }
+.closing .eyebrow { color: #e0c18f; }
+.closing h2 em { color: #d8b47b; }
+.btn.gold { background: #d6b47d; color: #29251f; }
+footer {
+  background: var(--paper);
+  color: var(--muted);
+  border-top: 1px solid var(--line);
+  padding: 23px 7%;
+}
+footer .footer-logo { font-size: 21px; }
+
+/* Visible, accessible return-to-top arrow. */
+.page-nav {
+  background: var(--ink);
+  color: #fff !important;
+  border: 1px solid rgba(255,255,255,.2);
+  box-shadow: 0 8px 24px rgba(41,34,23,.2);
+}
+.page-nav:hover { background: var(--gold-dark); }
+
+@media (max-width: 1050px) {
+  .hero { min-height: 0; }
+  .hero-photo-wrap, .hero-main { min-height: 400px; }
+  .marketplace-search .search-field { padding-left: 13px; padding-right: 13px; }
+  .marketplace-search .search-submit { padding: 0 13px; }
+}
+@media (max-width: 700px) {
+  .hero { background: var(--paper); padding-bottom: 32px; }
+  .hero-copy { padding: 48px 2% 28px; }
+  .hero h1 { font-size: clamp(48px, 13vw, 64px); letter-spacing: -2.5px; }
+  .hero-photo-wrap { min-height: 300px; margin: 0 0 8px; }
+  .hero-main { min-height: 300px; }
+  .search-band { padding: 18px 5%; }
+  .marketplace-search { grid-template-columns: 1fr; padding: 8px; }
+  .marketplace-search .search-field { height: 55px; min-height: 55px; padding: 7px 11px; }
+  .marketplace-search .search-field + .search-field { border-left: 0; border-top: 1px solid var(--line); }
+  .marketplace-search .search-submit {
+    width: 100%;
+    height: 46px;
+    min-height: 46px;
+    margin-top: 7px !important;
+  }
+  .section { padding-top: 54px; padding-bottom: 54px; }
+  .marketplace-categories, .occasion-grid { grid-template-columns: 1fr 1fr; }
+  .marketplace-category { aspect-ratio: 4 / 5.2; padding: 15px; }
+  .marketplace-category b { font-size: 16px; }
+  .marketplace-category small { font-size: 10px; }
+  .occasion-card { aspect-ratio: 4 / 3; padding: 17px; }
+  .occasion-card b { font-size: 19px; }
+  footer { text-align: center; }
+}
+@media (max-width: 430px) {
+  .marketplace-categories, .occasion-grid { grid-template-columns: 1fr; }
+  .marketplace-category { aspect-ratio: 16 / 10; }
+  .occasion-card { aspect-ratio: 16 / 10; }
+}
