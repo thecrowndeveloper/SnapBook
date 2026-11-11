@@ -3285,10 +3285,11 @@ footer .footer-logo { font-size: 21px; }
   background: #f8f7f4;
 }
 .google-mark {
-  font-family: Arial, sans-serif;
-  font-size: 19px;
-  font-weight: 700;
-  color: #4285f4;
+  display: block;
+  flex: 0 0 19px;
+  width: 19px;
+  height: 19px;
+  min-width: 19px;
 }
 .auth-provider-note {
   margin: 8px 0 0;
