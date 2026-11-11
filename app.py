@@ -54,12 +54,13 @@ if oauth and os.environ.get("GOOGLE_CLIENT_ID") and os.environ.get("GOOGLE_CLIEN
     )
 
 # Safe startup diagnostics: report configuration presence only, never credential values.
-app.logger.info(
-    "Google OAuth startup: authlib_available=%s client_id_present=%s client_secret_present=%s client_registered=%s",
-    OAuth is not None,
-    bool(os.environ.get("GOOGLE_CLIENT_ID", "").strip()),
-    bool(os.environ.get("GOOGLE_CLIENT_SECRET", "").strip()),
-    google_oauth is not None,
+print(
+    "Google OAuth startup: "
+    f"authlib_available={OAuth is not None} "
+    f"client_id_present={bool(os.environ.get('GOOGLE_CLIENT_ID', '').strip())} "
+    f"client_secret_present={bool(os.environ.get('GOOGLE_CLIENT_SECRET', '').strip())} "
+    f"client_registered={google_oauth is not None}",
+    flush=True,
 )
 
 LEGAL_VERSIONS = {
