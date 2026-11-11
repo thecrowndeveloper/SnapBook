@@ -20,7 +20,7 @@
 <p><strong>What services do you offer?</strong></p><p class="muted">Select all categories that apply.</p>
 <div class="category-options">{% for category in categories %}<label><input type="checkbox" name="category_ids" value="{{ category.id }}"> {{ category.name }}</label>{% endfor %}</div>
 </div>
-<div class="auth-divider"></div><p class="eyebrow">CREATE WITH EMAIL</p>
+<div class="auth-divider"></div><p class="eyebrow">CREATE WITH EMAIL</p><p class="muted auth-provider-note">Use any valid email address, including Gmail, Yahoo, Outlook, iCloud, or your work email. You do not need a Google account.</p>
 <label>Email address<input type="email" name="email" placeholder="you@example.com"></label>
 <label>Password<input type="password" name="password" minlength="8" placeholder="At least 8 characters"></label>
 <p class="muted">After registration, we’ll send a verification link to your email. You must verify it before logging in.</p>
@@ -32,7 +32,16 @@
 <label class="legal-check" id="professional-agreement"><input type="checkbox" name="accept_professional_agreement" value="yes"> I agree to the <a href="{{ url_for('legal_document', slug='professional-agreement') }}" target="_blank" rel="noopener">Creative Professional Agreement</a>, including the proposed 10% commission.</label>
 <small class="muted">These documents are draft versions awaiting Nigerian legal review. Live payments are not enabled. Marketing consent, if introduced, will be separate and optional.</small></div>
 <button type="submit" class="btn btn-primary">Create account with email</button>
-{% if google_enabled %}<button type="submit" class="btn btn-secondary" formaction="{{ url_for('google_start') }}" formmethod="POST" formnovalidate>Continue with Google</button>{% else %}<p class="muted">Google sign-in will appear here once its OAuth credentials are configured.</p>{% endif %}
+<div class="social-auth-option">
+  <div class="auth-or"><span>OR</span></div>
+  {% if google_enabled %}
+  <button type="submit" class="btn btn-google" formaction="{{ url_for('google_start') }}" formmethod="POST" formnovalidate><span class="google-mark" aria-hidden="true">G</span> Continue with Google</button>
+  <p class="auth-provider-note">Use your Google account to create or access your OneCre8 account.</p>
+  {% else %}
+  <button type="button" class="btn btn-google" disabled aria-disabled="true"><span class="google-mark" aria-hidden="true">G</span> Google sign-up coming soon</button>
+  <p class="auth-provider-note">Google account sign-up is not active yet. You can create an account now with any email provider.</p>
+  {% endif %}
+</div>
 </form></div></section>
 <script>
 const roleSelect=document.getElementById("account-role"), providerFields=document.getElementById("provider-fields");
