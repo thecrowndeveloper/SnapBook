@@ -53,6 +53,15 @@ if oauth and os.environ.get("GOOGLE_CLIENT_ID") and os.environ.get("GOOGLE_CLIEN
         client_kwargs={"scope": "openid email profile"},
     )
 
+# Safe startup diagnostics: report configuration presence only, never credential values.
+app.logger.info(
+    "Google OAuth startup: authlib_available=%s client_id_present=%s client_secret_present=%s client_registered=%s",
+    OAuth is not None,
+    bool(os.environ.get("GOOGLE_CLIENT_ID", "").strip()),
+    bool(os.environ.get("GOOGLE_CLIENT_SECRET", "").strip()),
+    google_oauth is not None,
+)
+
 LEGAL_VERSIONS = {
     "terms": "0.1-draft",
     "privacy": "0.1-draft",
