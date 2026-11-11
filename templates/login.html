@@ -2,9 +2,17 @@
 {% block title %}Log in | OneCre8 Media{% endblock %}
 {% block content %}<section class="section auth-section"><div class="auth-card">
 <p class="eyebrow">WELCOME BACK</p><h1>Log in to OneCre8</h1><p class="muted">Access your bookings and account.</p>
-{% if google_enabled %}<a class="btn btn-secondary full" href="{{ url_for('google_login') }}">Continue with Google</a><div class="auth-divider"></div>{% endif %}
+<div class="social-auth-option">
+  {% if google_enabled %}
+  <a class="btn btn-google full" href="{{ url_for('google_login') }}"><span class="google-mark" aria-hidden="true">G</span> Continue with Google</a>
+  <p class="auth-provider-note">Sign in securely with your Google account.</p>
+  {% else %}
+  <button type="button" class="btn btn-google full" disabled aria-disabled="true"><span class="google-mark" aria-hidden="true">G</span> Google sign-in coming soon</button>
+  <p class="auth-provider-note">Google sign-in is not active yet. You can still log in with any email address and password.</p>
+  {% endif %}
+</div><div class="auth-divider"></div>
 <form method="POST" class="booking-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-<label>Email address<input type="email" name="email" required placeholder="you@example.com"></label>
+<label>Email address<input type="email" name="email" required placeholder="you@example.com"></label><p class="auth-provider-note">Gmail, Yahoo, Outlook, iCloud, and other email addresses are supported.</p>
 <label>Password<input type="password" name="password" required placeholder="Your password"></label>
 <button class="btn dark full" type="submit">Log in</button></form>
 <p class="auth-switch"><a href="{{ url_for('forgot_password') }}">Forgot your password?</a></p>
