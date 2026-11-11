@@ -89,6 +89,56 @@ jobs:
                   "terms", "privacy", "content-policy", "client-policy"
               }
 
+          # Creative professionals must accept their own agreement, not the client policy.
+          category_id = onecre8.connect().execute(
+              "SELECT id FROM categories ORDER BY id LIMIT 1"
+          ).fetchone()["id"]
+          provider_payload = {
+              "role": "provider",
+              "name": "CI Test Creative",
+              "email": "ci-creative@example.test",
+              "password": "CorrectHorseBattery9!",
+              "accept_terms": "yes",
+              "accept_privacy": "yes",
+              "accept_content_policy": "yes",
+              "city": "Abuja",
+              "bio": "CI test creative professional profile.",
+              "category_ids": [str(category_id)],
+          }
+          response = client.post(
+              "/register", data=provider_payload, follow_redirects=False
+          )
+          assert response.status_code == 200
+          with onecre8.connect() as con:
+              assert con.execute(
+                  "SELECT id FROM users WHERE email = ?",
+                  ("ci-creative@example.test",)
+              ).fetchone() is None
+
+          provider_payload["accept_professional_agreement"] = "yes"
+          response = client.post(
+              "/register", data=provider_payload, follow_redirects=False
+          )
+          assert response.status_code == 302
+          with onecre8.connect() as con:
+              professional = con.execute(
+                  "SELECT * FROM users WHERE email = ?",
+                  ("ci-creative@example.test",)
+              ).fetchone()
+              assert professional is not None
+              assert professional["role"] == "provider"
+              professional_acceptances = con.execute(
+                  "SELECT document_key FROM legal_acceptances WHERE user_id = ?",
+                  (professional["id"],)
+              ).fetchall()
+              assert {row["document_key"] for row in professional_acceptances} == {
+                  "terms", "privacy", "content-policy", "professional-agreement"
+              }
+              assert con.execute(
+                  "SELECT id FROM providers WHERE user_id = ?",
+                  (professional["id"],)
+              ).fetchone() is not None
+
           response = client.post("/login", data={
               "email": "ci-client@example.test",
               "password": "CorrectHorseBattery9!",
