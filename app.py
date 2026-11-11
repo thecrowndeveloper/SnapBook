@@ -18,6 +18,7 @@ from flask_login import (
 )
 from flask_wtf.csrf import CSRFProtect
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.utils import secure_filename
 from uuid import uuid4
 from mutagen.mp4 import MP4
@@ -31,6 +32,8 @@ except ImportError as exc:
 
 
 app = Flask(__name__)
+# Trust Railway's forwarded HTTPS scheme so OAuth callbacks use the public HTTPS URL.
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 app.secret_key = os.environ.get(
     "SECRET_KEY",
     "local-development-secret-change-before-deployment"
