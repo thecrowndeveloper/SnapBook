@@ -1,117 +1,44 @@
-
 {% extends "base.html" %}
 {% block title %}Create an account | OneCre8 Media{% endblock %}
-
 {% block content %}
-<section class="section auth-section">
-    <div class="auth-card">
-        <p class="eyebrow">JOIN ONECRE8 MEDIA</p>
-        <h1>Create your account</h1>
-        <p class="muted">
-            Join as a client or register as a creative professional.
-        </p>
-
-        <form method="POST" class="booking-form" enctype="multipart/form-data">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-            <label>Account type
-                <select name="role" id="account-role">
-                    <option value="client"
-                        {% if role == 'client' %}selected{% endif %}>
-                        Client
-                    </option>
-                    <option value="provider"
-                        {% if role == 'provider' %}selected{% endif %}>
-                        Creative Professional
-                    </option>
-                </select>
-            </label>
-
-            <label>Full name
-                <input name="name" required
-                       placeholder="Your full name">
-            </label>
-
-            <label>Email address
-                <input type="email" name="email" required
-                       placeholder="you@example.com">
-            </label>
-
-            <label>Password
-                <input type="password" name="password"
-                       required minlength="8"
-                       placeholder="At least 8 characters">
-            </label>
-
-            <div id="provider-fields"
-                 {% if role != 'provider' %}hidden{% endif %}>
-
-                <div class="auth-divider"></div>
-
-                <p class="eyebrow">CREATIVE PROFESSIONAL PROFILE</p>
-
-                <label>Business or professional name
-                    <input name="business_name"
-                           placeholder="Your business name">
-                </label>
-
-                <label>City
-                    <input name="city"
-                           placeholder="e.g. Abuja">
-                </label>
-
-                <label>Short biography
-                    <textarea name="bio" rows="3"
-                              placeholder="Tell customers about your work and experience..."></textarea>
-                </label>
-
-                <label class="profile-upload-field">Professional profile picture
-                    <input type="file" name="profile_image"
-                           accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
-                    <small class="muted">Use a clear photo of yourself or your creative business. JPG, PNG or WebP. Optional for now — you can add one later.</small>
-                </label>
-
-                <p><strong>What services do you offer?</strong></p>
-                <p class="muted">
-                    Select all categories that apply to you.
-                </p>
-
-                <div class="category-options">
-                    {% for category in categories %}
-                        <label>
-                            <input type="checkbox"
-                                   name="category_ids"
-                                   value="{{ category.id }}">
-                            {{ category.name }}
-                        </label>
-                    {% endfor %}
-                </div>
-            </div>
-
-            <button type="submit" class="btn btn-primary">
-                Create account
-            </button>
-        </form>
-    </div>
-</section>
-
+<section class="section auth-section"><div class="auth-card">
+<p class="eyebrow">JOIN ONECRE8 MEDIA</p><h1>Create your account</h1>
+<p class="muted">Join as a client or register as a creative professional.</p>
+<form method="POST" class="booking-form" enctype="multipart/form-data">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<label>Account type<select name="role" id="account-role">
+<option value="client" {% if role == 'client' %}selected{% endif %}>Client</option>
+<option value="provider" {% if role == 'provider' %}selected{% endif %}>Creative Professional</option>
+</select></label>
+<label>Full name<input name="name" required placeholder="Your full name"></label>
+<div id="provider-fields" {% if role != 'provider' %}hidden{% endif %}>
+<div class="auth-divider"></div><p class="eyebrow">CREATIVE PROFESSIONAL PROFILE</p>
+<label>Business or professional name<input name="business_name" placeholder="Your business name"></label>
+<label>City<input name="city" placeholder="e.g. Abuja"></label>
+<label>Short biography<textarea name="bio" rows="3" placeholder="Tell customers about your work..."></textarea></label>
+<label class="profile-upload-field">Professional profile picture<input type="file" name="profile_image" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"><small class="muted">Optional for now.</small></label>
+<p><strong>What services do you offer?</strong></p><p class="muted">Select all categories that apply.</p>
+<div class="category-options">{% for category in categories %}<label><input type="checkbox" name="category_ids" value="{{ category.id }}"> {{ category.name }}</label>{% endfor %}</div>
+</div>
+<div class="auth-divider"></div><p class="eyebrow">CREATE WITH EMAIL</p>
+<label>Email address<input type="email" name="email" placeholder="you@example.com"></label>
+<label>Password<input type="password" name="password" minlength="8" placeholder="At least 8 characters"></label>
+<p class="muted">After registration, we’ll send a verification link to your email. You must verify it before logging in.</p>
+<div class="legal-acceptance"><p><strong>Before creating your account</strong></p>
+<label class="legal-check"><input type="checkbox" name="accept_terms" value="yes" required> I agree to the <a href="{{ url_for('legal_document', slug='terms') }}" target="_blank" rel="noopener">General Terms and Conditions</a>.</label>
+<label class="legal-check"><input type="checkbox" name="accept_privacy" value="yes" required> I have read the <a href="{{ url_for('legal_document', slug='privacy') }}" target="_blank" rel="noopener">Privacy Policy</a>.</label>
+<label class="legal-check"><input type="checkbox" name="accept_content_policy" value="yes" required> I agree to the <a href="{{ url_for('legal_document', slug='content-policy') }}" target="_blank" rel="noopener">Marketplace Content and Review Policy</a>.</label>
+<label class="legal-check" id="client-agreement"><input type="checkbox" name="accept_client_policy" value="yes"> I have read the <a href="{{ url_for('legal_document', slug='client-policy') }}" target="_blank" rel="noopener">Client Booking and Service Policy</a>.</label>
+<label class="legal-check" id="professional-agreement"><input type="checkbox" name="accept_professional_agreement" value="yes"> I agree to the <a href="{{ url_for('legal_document', slug='professional-agreement') }}" target="_blank" rel="noopener">Creative Professional Agreement</a>, including the proposed 10% commission.</label>
+<small class="muted">These documents are draft versions awaiting Nigerian legal review. Live payments are not enabled. Marketing consent, if introduced, will be separate and optional.</small></div>
+<button type="submit" class="btn btn-primary">Create account with email</button>
+{% if google_enabled %}<button type="submit" class="btn btn-secondary" formaction="{{ url_for('google_start') }}" formmethod="POST" formnovalidate>Continue with Google</button>{% else %}<p class="muted">Google sign-in will appear here once its OAuth credentials are configured.</p>{% endif %}
+</form></div></section>
 <script>
-    const roleSelect = document.getElementById("account-role");
-    const providerFields = document.getElementById("provider-fields");
-
-    function updateRegistrationFields() {
-        const isProvider = roleSelect.value === "provider";
-
-        providerFields.hidden = !isProvider;
-
-        providerFields.querySelectorAll(
-            'input:not([type="checkbox"]):not([type="file"]), textarea'
-        ).forEach(field => {
-            field.required = isProvider;
-        });
-    }
-
-    roleSelect.addEventListener("change", updateRegistrationFields);
-    updateRegistrationFields();
+const roleSelect=document.getElementById("account-role"), providerFields=document.getElementById("provider-fields");
+const clientAgreement=document.getElementById("client-agreement"), professionalAgreement=document.getElementById("professional-agreement");
+const clientCheck=clientAgreement.querySelector("input"), professionalCheck=professionalAgreement.querySelector("input");
+function updateRegistrationFields(){const isProvider=roleSelect.value==="provider";providerFields.hidden=!isProvider;clientAgreement.hidden=isProvider;professionalAgreement.hidden=!isProvider;clientCheck.required=!isProvider;professionalCheck.required=isProvider;providerFields.querySelectorAll('input:not([type="checkbox"]):not([type="file"]), textarea').forEach(field=>field.required=isProvider);}
+roleSelect.addEventListener("change",updateRegistrationFields);updateRegistrationFields();
 </script>
 {% endblock %}
