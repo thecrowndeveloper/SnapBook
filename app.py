@@ -22,10 +22,12 @@ from werkzeug.utils import secure_filename
 from uuid import uuid4
 from mutagen.mp4 import MP4
 
+AUTHLIB_IMPORT_ERROR = None
 try:
     from authlib.integrations.flask_client import OAuth
-except ImportError:
+except ImportError as exc:
     OAuth = None
+    AUTHLIB_IMPORT_ERROR = f"{type(exc).__name__}: {exc}"
 
 
 app = Flask(__name__)
@@ -59,7 +61,8 @@ print(
     f"authlib_available={OAuth is not None} "
     f"client_id_present={bool(os.environ.get('GOOGLE_CLIENT_ID', '').strip())} "
     f"client_secret_present={bool(os.environ.get('GOOGLE_CLIENT_SECRET', '').strip())} "
-    f"client_registered={google_oauth is not None}",
+    f"client_registered={google_oauth is not None} "
+    f"import_error={AUTHLIB_IMPORT_ERROR or 'none'}",
     flush=True,
 )
 
