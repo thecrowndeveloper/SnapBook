@@ -12,3 +12,4 @@ WTForms==3.3.2
 
 mutagen==1.48.1
 Authlib==1.6.5
+requests==2.32.5
