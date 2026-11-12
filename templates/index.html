@@ -142,6 +142,37 @@
     <h2>Find what brings your idea to life.</h2>
     <p>Browse each collection, discover the work, and connect with the people behind it.</p>
   </div>
+  <div class="category-grid" aria-label="Browse creative categories">
+    {% for slug, eyebrow, title, description, fallback, kind in showcases %}
+      {% set service_items = showcase_services.get(slug, []) %}
+      {% set product_items = showcase_products.get(slug, []) %}
+      {% if kind == 'services' %}
+        {% set lead = service_items[0] if service_items else none %}
+        {% set main_image = lead.preview_image if lead and lead.preview_image else url_for('static', filename='images/' ~ fallback) %}
+        {% set side_one = lead.preview_image_2 if lead else none %}
+        {% set side_two = lead.preview_image_3 if lead else none %}
+      {% else %}
+        {% set lead = product_items[0] if product_items else none %}
+        {% set main_image = lead.image if lead and lead.image and (lead.image.startswith('https://') or lead.image.startswith('http://') or lead.image.startswith('/static/')) else url_for('static', filename='images/' ~ fallback) %}
+        {% set side_one = lead.gallery_image_2 if lead else none %}
+        {% set side_two = lead.gallery_image_3 if lead else none %}
+      {% endif %}
+      <a class="category-tile{% if side_one or side_two %} has-supporting-images{% endif %}" href="{{ url_for('home', category=slug, city=city) }}">
+        <span class="category-tile-media">
+          <img class="category-tile-main" src="{{ main_image }}" alt="{{ title }}" loading="lazy">
+          {% if side_one or side_two %}
+            <span class="category-tile-support">
+              {% if side_one %}<img src="{{ side_one }}" alt="" loading="lazy">{% endif %}
+              {% if side_two %}<img src="{{ side_two }}" alt="" loading="lazy">{% endif %}
+            </span>
+          {% endif %}
+          <span class="category-tile-shade"></span>
+          <span class="category-tile-copy"><strong>{{ title }}</strong><small>{{ description }}</small></span>
+          <span class="category-tile-arrow" aria-hidden="true">↗</span>
+        </span>
+      </a>
+    {% endfor %}
+  </div>
   {% for slug, eyebrow, title, description, fallback, kind in showcases %}
     {% if not category_slug or category_slug == slug %}
       <section class="showcase-shelf" id="shelf-{{ slug }}">
