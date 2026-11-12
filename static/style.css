@@ -2729,3 +2729,35 @@ footer .footer-logo { font-size: 21px; }
         display: grid !important;
     }
 }
+
+
+/* OneCre8: show category carousel arrows on mobile */
+@media (max-width: 700px) {
+  .showcase-track-wrap {
+    overflow: visible !important;
+  }
+
+  .showcase-arrow {
+    display: grid !important;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 5;
+    width: 34px;
+    height: 34px;
+    border: 1px solid #d8cbb8;
+    border-radius: 50%;
+    background: #fff;
+    color: #29251f;
+    font-size: 25px;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, .15);
+  }
+
+  .showcase-prev {
+    left: 4px;
+  }
+
+  .showcase-next {
+    right: 4px;
+  }
+}
