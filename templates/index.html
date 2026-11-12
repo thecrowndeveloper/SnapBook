@@ -51,7 +51,13 @@
     {% for item in items %}
       <article class="showcase-card">
         <a class="showcase-image" href="{{ url_for('service_detail', service_id=item.id) }}">
-          <img src="{{ item.preview_image or url_for('static', filename='images/' ~ fallback) }}" alt="{{ item.title }}" loading="lazy">
+          <img class="showcase-gallery-main" src="{{ item.preview_image or url_for('static', filename='images/' ~ fallback) }}" alt="{{ item.title }}" loading="lazy">
+          {% if item.preview_image_2 or item.preview_image_3 %}
+            <span class="showcase-gallery-side">
+              {% if item.preview_image_2 %}<img src="{{ item.preview_image_2 }}" alt="{{ item.title }} portfolio example" loading="lazy">{% endif %}
+              {% if item.preview_image_3 %}<img src="{{ item.preview_image_3 }}" alt="{{ item.title }} portfolio example" loading="lazy">{% endif %}
+            </span>
+          {% endif %}
           <span class="showcase-open">View service</span>
         </a>
         <div class="showcase-card-body">
@@ -85,7 +91,13 @@
       <article class="showcase-card">
 {% set product_image = item.image if item.image and (item.image.startswith("https://") or item.image.startswith("http://") or item.image.startswith("/static/")) else url_for("static", filename="images/" ~ fallback) %}
         <a class="showcase-image" href="{{ url_for('public_provider', provider_id=item.provider_id) }}">
-          <img src="{{ product_image }}" alt="{{ item.title }}" loading="lazy">
+          <img class="showcase-gallery-main" src="{{ product_image }}" alt="{{ item.title }}" loading="lazy">
+          {% if item.gallery_image_2 or item.gallery_image_3 %}
+            <span class="showcase-gallery-side">
+              {% if item.gallery_image_2 %}<img src="{{ item.gallery_image_2 }}" alt="{{ item.title }} portfolio example" loading="lazy">{% endif %}
+              {% if item.gallery_image_3 %}<img src="{{ item.gallery_image_3 }}" alt="{{ item.title }} portfolio example" loading="lazy">{% endif %}
+            </span>
+          {% endif %}
           <span class="showcase-open">Meet the seller</span>
         </a>
         <div class="showcase-card-body">
