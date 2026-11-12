@@ -3297,3 +3297,14 @@ footer .footer-logo { font-size: 21px; }
   line-height: 1.6;
   color: #766f65;
 }
+
+
+/* Keep the professional commission explanation separate from its agreement checkbox. */
+.auth-card .professional-commission {
+  display: block;
+  margin: -4px 0 14px 27px;
+  max-width: 440px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
