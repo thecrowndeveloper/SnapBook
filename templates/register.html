@@ -29,7 +29,8 @@
 <label class="legal-check"><input type="checkbox" name="accept_privacy" value="yes" required> I have read the <a href="{{ url_for('legal_document', slug='privacy') }}" target="_blank" rel="noopener">Privacy Policy</a></label>
 <label class="legal-check"><input type="checkbox" name="accept_content_policy" value="yes" required> I agree to the <a href="{{ url_for('legal_document', slug='content-policy') }}" target="_blank" rel="noopener">Marketplace Content and Review Policy</a></label>
 <label class="legal-check" id="client-agreement"><input type="checkbox" name="accept_client_policy" value="yes"> I have read the <a href="{{ url_for('legal_document', slug='client-policy') }}" target="_blank" rel="noopener">Client Booking and Service Policy</a></label>
-<label class="legal-check" id="professional-agreement"><input type="checkbox" name="accept_professional_agreement" value="yes"> I agree to the <a href="{{ url_for('legal_document', slug='professional-agreement') }}" target="_blank" rel="noopener">Creative Professional Agreement</a>, including the proposed 10% commission</label>
+<label class="legal-check" id="professional-agreement"><input type="checkbox" name="accept_professional_agreement" value="yes"> I agree to the <a href="{{ url_for('legal_document', slug='professional-agreement') }}" target="_blank" rel="noopener">Creative Professional Agreement</a></label>
+<small class="professional-commission" id="professional-commission">Proposed platform commission: 10% of eligible completed transactions. No live payments or commission collection are enabled yet.</small>
 <small class="muted">These documents are draft versions awaiting Nigerian legal review. Live payments are not enabled. Marketing consent, if introduced, will be separate and optional.</small></div>
 <button type="submit" class="btn btn-primary">Create account with email</button>
 <div class="social-auth-option">
