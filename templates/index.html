@@ -46,7 +46,7 @@
   </form>
 </section>
 
-{% macro service_showcase(items, fallback, category_slug) %}
+{% macro service_showcase(items, fallback, secondary_fallback, category_slug) %}
   {% if items %}
     {% for item in items %}
       <article class="showcase-card">
@@ -72,14 +72,17 @@
     {% endfor %}
   {% else %}
     <div class="showcase-empty">
-      <img class="showcase-empty-image" src="{{ url_for('static', filename='images/' ~ fallback) }}" alt="{{ category_slug|replace('-', ' ')|title }} collection" loading="lazy">
-      <span>CURATED FOR YOUR NEXT IDEA</span>
+      <div class="showcase-empty-gallery">
+        <img src="{{ url_for('static', filename='images/' ~ fallback) }}" alt="{{ category_slug|replace('-', ' ')|title }} category inspiration, image 1" loading="lazy">
+        <img src="{{ url_for('static', filename='images/' ~ secondary_fallback) }}" alt="{{ category_slug|replace('-', ' ')|title }} category inspiration, image 2" loading="lazy">
+      </div>
+      <span>CATEGORY INSPIRATION · NOT A USER PORTFOLIO</span>
       <p>New services are being added to this collection.</p>
     </div>
   {% endif %}
 {% endmacro %}
 
-{% macro product_showcase(items, fallback, category_slug) %}
+{% macro product_showcase(items, fallback, secondary_fallback, category_slug) %}
   {% if items %}
     {% for item in items %}
       <article class="showcase-card">
@@ -106,22 +109,25 @@
     {% endfor %}
   {% else %}
     <div class="showcase-empty">
-      <img class="showcase-empty-image" src="{{ url_for('static', filename='images/' ~ fallback) }}" alt="{{ category_slug|replace('-', ' ')|title }} collection" loading="lazy">
-      <span>CURATED FOR YOUR NEXT IDEA</span>
+      <div class="showcase-empty-gallery">
+        <img src="{{ url_for('static', filename='images/' ~ fallback) }}" alt="{{ category_slug|replace('-', ' ')|title }} category inspiration, image 1" loading="lazy">
+        <img src="{{ url_for('static', filename='images/' ~ secondary_fallback) }}" alt="{{ category_slug|replace('-', ' ')|title }} category inspiration, image 2" loading="lazy">
+      </div>
+      <span>CATEGORY INSPIRATION · NOT A USER PORTFOLIO</span>
       <p>New listings are being added to this collection.</p>
     </div>
   {% endif %}
 {% endmacro %}
 
 {% set showcases = [
-  ('photography', '01 / CREATE', 'Photography', 'Portraits, events, products and the moments worth keeping.', 'categories/photography.jpg', 'services'),
-  ('videography', '02 / TELL STORIES', 'Videography', 'Films, events, reels and visual storytelling.', 'categories/Videography.jpg', 'services'),
-  ('media-equipment', '03 / GET EQUIPPED', 'Media equipment', 'Cameras, lighting, sound and production essentials.', 'categories/Media Equipment.jpg', 'products'),
-  ('artwork', '04 / MAKE IT ART', 'Art for Sale', 'Discover original art and creative pieces from local makers.', 'categories/Artsale.jpg', 'products'),
-  ('costume-rentals', '05 / STYLE THE MOMENT', 'Costume rentals', 'Find the right look for shoots, events and productions.', 'categories/costumerentals.jpg', 'products'),
-  ('spaces-studios', '06 / FIND YOUR SPACE', 'Spaces & Studios', 'Studios, event venues and spaces for content creation.', 'categories/Studio&Space.jpg', 'services'),
-  ('photo-framing', '07 / FRAME YOUR STORY', 'Photo Framing', 'Give your favourite photographs and artwork a beautiful finish.', 'categories/Photoframing.jpg', 'services'),
-  ('interior-design', '08 / SHAPE YOUR SPACE', 'Interior Design', 'Find creative professionals to transform homes, offices and spaces.', 'categories/Interiordesign.jpg', 'services')
+  ('photography', '01 / CREATE', 'Photography', 'Portraits, events, products and the moments worth keeping.', 'categories/photography.jpg', 'categories/photography-02.jpg', 'services'),
+  ('videography', '02 / TELL STORIES', 'Videography', 'Films, events, reels and visual storytelling.', 'categories/Videography.jpg', 'categories/videography-02.jpg', 'services'),
+  ('media-equipment', '03 / GET EQUIPPED', 'Media equipment', 'Cameras, lighting, sound and production essentials.', 'categories/Media Equipment.jpg', 'categories/media-equipment-02.jpg', 'products'),
+  ('artwork', '04 / MAKE IT ART', 'Art for Sale', 'Discover original art and creative pieces from local makers.', 'categories/Artsale.jpg', 'categories/artwork-02.jpg', 'products'),
+  ('costume-rentals', '05 / STYLE THE MOMENT', 'Costume rentals', 'Find the right look for shoots, events and productions.', 'categories/costumerentals.jpg', 'categories/costume-rentals-02.jpg', 'products'),
+  ('spaces-studios', '06 / FIND YOUR SPACE', 'Spaces & Studios', 'Studios, event venues and spaces for content creation.', 'categories/Studio&Space.jpg', 'categories/spaces-studios-02.jpg', 'services'),
+  ('photo-framing', '07 / FRAME YOUR STORY', 'Photo Framing', 'Give your favourite photographs and artwork a beautiful finish.', 'categories/Photoframing.jpg', 'categories/photo-framing-02.jpg', 'services'),
+  ('interior-design', '08 / SHAPE YOUR SPACE', 'Interior Design', 'Find creative professionals to transform homes, offices and spaces.', 'categories/Interiordesign.jpg', 'categories/interior-design-02.jpg', 'services')
 ] %}
 
 <section class="showcase-library" id="categories">
@@ -130,7 +136,7 @@
     <h2>Find what brings your idea to life.</h2>
     <p>Browse each collection, discover the work, and connect with the people behind it.</p>
   </div>
-  {% for slug, eyebrow, title, description, fallback, kind in showcases %}
+  {% for slug, eyebrow, title, description, fallback, secondary_fallback, kind in showcases %}
     {% if not category_slug or category_slug == slug %}
       <section class="showcase-shelf" id="shelf-{{ slug }}">
         <div class="showcase-heading">
@@ -145,9 +151,9 @@
           <button class="showcase-arrow showcase-prev" type="button" aria-label="Scroll {{ title }} left" data-scroll="left">‹</button>
           <div class="showcase-track" data-showcase-track>
             {% if kind == 'services' %}
-              {{ service_showcase(showcase_services.get(slug, []), fallback, slug) }}
+              {{ service_showcase(showcase_services.get(slug, []), fallback, secondary_fallback, slug) }}
             {% else %}
-              {{ product_showcase(showcase_products.get(slug, []), fallback, slug) }}
+              {{ product_showcase(showcase_products.get(slug, []), fallback, secondary_fallback, slug) }}
             {% endif %}
           </div>
           <button class="showcase-arrow showcase-next" type="button" aria-label="Scroll {{ title }} right" data-scroll="right">›</button>
