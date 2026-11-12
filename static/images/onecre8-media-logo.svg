@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 92" role="img" aria-labelledby="title">
+  <title id="title">OneCre8 Media</title>
+  <g fill="none" stroke="#E5AD43" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M13 30h15l8-12h34l9 12h13v47H13z"/>
+    <circle cx="49" cy="53" r="17"/>
+    <path d="M78 39h8"/>
+  </g>
+  <text x="105" y="55" fill="#F8F7F3" font-family="Arial, Helvetica, sans-serif" font-size="43" font-weight="700" letter-spacing="-2">One</text>
+  <text x="183" y="55" fill="#E5AD43" font-family="Arial, Helvetica, sans-serif" font-size="43" font-weight="700" letter-spacing="-2">Cre8</text>
+  <text x="108" y="78" fill="#F8F7F3" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="600" letter-spacing="7">MEDIA</text>
+</svg>
