@@ -3299,12 +3299,7 @@ footer .footer-logo { font-size: 21px; }
 }
 
 
-/* Keep the professional commission explanation separate from its agreement checkbox. */
-.auth-card .professional-commission {
-  display: block;
-  margin: -4px 0 14px 27px;
-  max-width: 440px;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.55;
+/* Give the registration form a little more room for policy names and labels. */
+.auth-card.register-card {
+  max-width: 580px;
 }
