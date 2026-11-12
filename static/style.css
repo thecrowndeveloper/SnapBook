@@ -3297,3 +3297,9 @@ footer .footer-logo { font-size: 21px; }
   line-height: 1.6;
   color: #766f65;
 }
+
+
+/* Give the registration form a little more room for policy names and labels. */
+.auth-card.register-card {
+  max-width: 580px;
+}
