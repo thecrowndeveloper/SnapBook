@@ -872,7 +872,19 @@ def home():
                             ORDER BY portfolio_items.created_at DESC
                             LIMIT 1),
                            providers.profile_image
-                       ) AS preview_image
+                       ) AS preview_image,
+                       (SELECT '/portfolio-media/' || portfolio_items.filename
+                        FROM portfolio_items
+                        WHERE portfolio_items.provider_id = providers.id
+                          AND portfolio_items.media_type = 'image'
+                        ORDER BY portfolio_items.created_at DESC
+                        LIMIT 1 OFFSET 1) AS preview_image_2,
+                       (SELECT '/portfolio-media/' || portfolio_items.filename
+                        FROM portfolio_items
+                        WHERE portfolio_items.provider_id = providers.id
+                          AND portfolio_items.media_type = 'image'
+                        ORDER BY portfolio_items.created_at DESC
+                        LIMIT 1 OFFSET 2) AS preview_image_3
                 FROM services
                 JOIN categories ON categories.id = services.category_id
                 JOIN providers ON providers.id = services.provider_id
@@ -892,7 +904,19 @@ def home():
                        categories.name AS category_name,
                        providers.id AS provider_id,
                        providers.display_name, providers.business_name,
-                       providers.city, providers.profile_image
+                       providers.city, providers.profile_image,
+                       (SELECT '/portfolio-media/' || portfolio_items.filename
+                        FROM portfolio_items
+                        WHERE portfolio_items.provider_id = providers.id
+                          AND portfolio_items.media_type = 'image'
+                        ORDER BY portfolio_items.created_at DESC
+                        LIMIT 1) AS gallery_image_2,
+                       (SELECT '/portfolio-media/' || portfolio_items.filename
+                        FROM portfolio_items
+                        WHERE portfolio_items.provider_id = providers.id
+                          AND portfolio_items.media_type = 'image'
+                        ORDER BY portfolio_items.created_at DESC
+                        LIMIT 1 OFFSET 1) AS gallery_image_3
                 FROM products
                 JOIN categories ON categories.id = products.category_id
                 JOIN providers ON providers.id = products.provider_id

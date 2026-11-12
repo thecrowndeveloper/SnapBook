@@ -10,12 +10,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='onecre8-mobile-nav-panel-20261110') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='onecre8-cinematic-home-20261112') }}">
 </head>
 <body>
 
 <header class="topbar">
-  <a class="logo" href="{{ url_for('home') }}">OneCre8<i>.</i></a>
+  <a class="logo" href="{{ url_for('home') }}" aria-label="OneCre8 Media home"><img src="{{ url_for('static', filename='images/onecre8-media-logo.svg') }}" alt="OneCre8 Media"></a>
 
   <button class="mobile-menu-toggle" type="button" aria-label="Open navigation menu" aria-controls="primary-navigation" aria-expanded="false"><span></span><span></span><span></span></button>
  <nav id="primary-navigation" class="primary-navigation">
@@ -57,7 +57,7 @@
 
 
 <footer>
-  <a class="footer-logo" href="{{ url_for('home') }}">OneCre8<i>.</i></a>
+  <a class="footer-logo" href="{{ url_for('home') }}" aria-label="OneCre8 Media home"><img src="{{ url_for('static', filename='images/onecre8-media-logo.svg') }}" alt="OneCre8 Media"></a>
   <span>One marketplace for every creative need.</span>
   <span>© 2026 OneCre8 Media · Nigeria</span>
 </footer>
