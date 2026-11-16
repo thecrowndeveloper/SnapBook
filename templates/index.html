@@ -71,14 +71,24 @@
       </article>
     {% endfor %}
   {% else %}
-    <div class="showcase-empty">
-      <div class="showcase-empty-gallery">
+    <article class="showcase-card showcase-inspiration-slide">
+      <div class="showcase-image showcase-empty-image">
         <img src="{{ url_for('static', filename='images/' ~ fallback) }}" alt="{{ category_slug|replace('-', ' ')|title }} category inspiration, image 1" loading="lazy">
+      </div>
+      <div class="showcase-card-body">
+        <span class="showcase-type">CATEGORY INSPIRATION · NOT A USER PORTFOLIO</span>
+        <p class="showcase-description">New services are being added to this collection.</p>
+      </div>
+    </article>
+    <article class="showcase-card showcase-inspiration-slide">
+      <div class="showcase-image showcase-empty-image">
         <img src="{{ url_for('static', filename='images/' ~ secondary_fallback) }}" alt="{{ category_slug|replace('-', ' ')|title }} category inspiration, image 2" loading="lazy">
       </div>
-      <span>CATEGORY INSPIRATION · NOT A USER PORTFOLIO</span>
-      <p>New services are being added to this collection.</p>
-    </div>
+      <div class="showcase-card-body">
+        <span class="showcase-type">CATEGORY INSPIRATION · NOT A USER PORTFOLIO</span>
+        <p class="showcase-description">New services are being added to this collection.</p>
+      </div>
+    </article>
   {% endif %}
 {% endmacro %}
 
@@ -108,14 +118,24 @@
       </article>
     {% endfor %}
   {% else %}
-    <div class="showcase-empty">
-      <div class="showcase-empty-gallery">
+    <article class="showcase-card showcase-inspiration-slide">
+      <div class="showcase-image showcase-empty-image">
         <img src="{{ url_for('static', filename='images/' ~ fallback) }}" alt="{{ category_slug|replace('-', ' ')|title }} category inspiration, image 1" loading="lazy">
+      </div>
+      <div class="showcase-card-body">
+        <span class="showcase-type">CATEGORY INSPIRATION · NOT A USER PORTFOLIO</span>
+        <p class="showcase-description">New listings are being added to this collection.</p>
+      </div>
+    </article>
+    <article class="showcase-card showcase-inspiration-slide">
+      <div class="showcase-image showcase-empty-image">
         <img src="{{ url_for('static', filename='images/' ~ secondary_fallback) }}" alt="{{ category_slug|replace('-', ' ')|title }} category inspiration, image 2" loading="lazy">
       </div>
-      <span>CATEGORY INSPIRATION · NOT A USER PORTFOLIO</span>
-      <p>New listings are being added to this collection.</p>
-    </div>
+      <div class="showcase-card-body">
+        <span class="showcase-type">CATEGORY INSPIRATION · NOT A USER PORTFOLIO</span>
+        <p class="showcase-description">New listings are being added to this collection.</p>
+      </div>
+    </article>
   {% endif %}
 {% endmacro %}
 
