@@ -123,3 +123,16 @@ body :where(input, select, textarea):focus-visible {
   border-color: #805a2b !important;
   box-shadow: 0 0 0 2px rgba(128, 90, 43, .18) !important;
 }
+
+
+/* Respect operating-system reduced-motion preferences. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
