@@ -68,7 +68,7 @@
                               action="{{ url_for('booking_status', booking_id=b.id) }}">
                             <input type="hidden" name="csrf_token"
                                    value="{{ csrf_token() }}">
-                            <select name="status">
+                            <select name="status" aria-label="Update booking status for {{ b.client_name }}">
                                 <option value="Pending" {% if b.status == 'Pending' %}selected{% endif %}>Pending</option>
                                 <option value="Confirmed" {% if b.status == 'Confirmed' %}selected{% endif %}>Confirmed</option>
                                 <option value="Cancelled" {% if b.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
