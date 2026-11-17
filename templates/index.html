@@ -46,7 +46,7 @@
   </form>
 </section>
 
-{% macro service_showcase(items, fallback, secondary_fallback, category_slug) %}
+{% macro service_showcase(items, fallback, secondary_fallback, category_slug, inspiration_images) %}
   {% if items %}
     {% for item in items %}
       <article class="showcase-card">
@@ -80,9 +80,21 @@
       <p>New services are being added to this collection.</p>
     </div>
   {% endif %}
+
+  {% for image_path in inspiration_images %}
+    <article class="showcase-card showcase-inspiration-slide">
+      <div class="showcase-image showcase-empty-image">
+        <img src="{{ url_for('static', filename='images/' ~ image_path) }}" alt="{{ category_slug|replace('-', ' ')|title }} category inspiration" loading="lazy">
+      </div>
+      <div class="showcase-card-body">
+        <span class="showcase-type">CATEGORY INSPIRATION · NOT A USER PORTFOLIO</span>
+        <p class="showcase-description">Explore creative possibilities in {{ category_slug|replace('-', ' ')|title }}.</p>
+      </div>
+    </article>
+  {% endfor %}
 {% endmacro %}
 
-{% macro product_showcase(items, fallback, secondary_fallback, category_slug) %}
+{% macro product_showcase(items, fallback, secondary_fallback, category_slug, inspiration_images) %}
   {% if items %}
     {% for item in items %}
       <article class="showcase-card">
@@ -119,6 +131,50 @@
   {% endif %}
 {% endmacro %}
 
+
+{% set inspiration_images = {
+  'photography': [
+    'categories/One-Cre8-Media/African_bridal_portrait_in_studio_26253628.jpg',
+    'categories/One-Cre8-Media/Family_portrait_session_in_home_5a8c731a.jpg',
+    'categories/One-Cre8-Media/Photographer_capturing_fashion_e…_ede4f3e5.jpg'
+  ],
+  'videography': [
+    'categories/One-Cre8-Media/African_couple_wedding_film_prod…_921d92ce.jpg',
+    'categories/One-Cre8-Media/Commercial_video_production_in_s…_555bf9a8.jpg',
+    'categories/One-Cre8-Media/Videographer_operating_cinema_ca…_398b40d8.jpg'
+  ],
+  'media-equipment': [
+    'categories/One-Cre8-Media/Audio_recording_and_podcast_station_6462a2f1.jpg',
+    'categories/One-Cre8-Media/Cameras_and_lenses_arranged_neatly_fc145d9e.jpg',
+    'categories/One-Cre8-Media/Video_production_lighting_setup_…_078f55aa.jpg'
+  ],
+  'artwork': [
+    'categories/One-Cre8-Media/Abstract_artwork_in_modern_interior_d7f0919c.jpg',
+    'categories/One-Cre8-Media/Artist_painting_on_large_canvas_96e5600a.jpg',
+    'categories/One-Cre8-Media/Sculptor_crafting_art_piece_d7eb941f.jpg'
+  ],
+  'costume-rentals': [
+    'categories/One-Cre8-Media/Fashion_model_wearing_contempora…_614d9661.jpg',
+    'categories/One-Cre8-Media/Fashion_stylist_preparing_tradit…_11502dd3.jpg',
+    'categories/One-Cre8-Media/Occasion_dresses_displayed_in_bo…_a304b21c.jpg'
+  ],
+  'spaces-studios': [
+    'categories/One-Cre8-Media/Content_creation_studio_interior_e05ffbd1.jpg',
+    'categories/One-Cre8-Media/Event_venue_prepared_for_celebra…_cfad29ce.jpg',
+    'categories/One-Cre8-Media/Photography_studio_interior_70507f06.jpg'
+  ],
+  'photo-framing': [
+    'categories/One-Cre8-Media/Craftsperson_assembling_wooden_p…_5450439d.jpg',
+    'categories/One-Cre8-Media/Framed_family_photograph_in_inte…_b724c32c.jpg',
+    'categories/One-Cre8-Media/Gallery_wall_featuring_African_p…_450f2335.jpg'
+  ],
+  'interior-design': [
+    'categories/One-Cre8-Media/Designer_presenting_bedroom_tran…_bafb5344.jpg',
+    'categories/One-Cre8-Media/Modern_apartment_interior_photog…_c5aefce3.jpg',
+    'categories/One-Cre8-Media/Modern_living_room_interior_design_81150746.jpg'
+  ]
+} %}
+
 {% set showcases = [
   ('photography', '01 / CREATE', 'Photography', 'Portraits, events, products and the moments worth keeping.', 'categories/photography.jpg', 'categories/photography-02.jpg', 'services'),
   ('videography', '02 / TELL STORIES', 'Videography', 'Films, events, reels and visual storytelling.', 'categories/Videography.jpg', 'categories/videography-02.jpg', 'services'),
@@ -151,9 +207,9 @@
           <button class="showcase-arrow showcase-prev" type="button" aria-label="Scroll {{ title }} left" data-scroll="left">‹</button>
           <div class="showcase-track" data-showcase-track>
             {% if kind == 'services' %}
-              {{ service_showcase(showcase_services.get(slug, []), fallback, secondary_fallback, slug) }}
+              {{ service_showcase(showcase_services.get(slug, []), fallback, secondary_fallback, slug, inspiration_images.get(slug, [])) }}
             {% else %}
-              {{ product_showcase(showcase_products.get(slug, []), fallback, secondary_fallback, slug) }}
+              {{ product_showcase(showcase_products.get(slug, []), fallback, secondary_fallback, slug, inspiration_images.get(slug, [])) }}
             {% endif %}
           </div>
           <button class="showcase-arrow showcase-next" type="button" aria-label="Scroll {{ title }} right" data-scroll="right">›</button>
