@@ -12,8 +12,8 @@
   {% endif %}
 </div><div class="auth-divider"></div>
 <form method="POST" class="booking-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-<label>Email address<input type="email" name="email" required placeholder="you@example.com"></label><p class="auth-provider-note">Gmail, Yahoo, Outlook, iCloud, and other email addresses are supported.</p>
-<label>Password<input type="password" name="password" required placeholder="Your password"></label>
+<label>Email address<input type="email" name="email" autocomplete="username" required placeholder="you@example.com"></label><p class="auth-provider-note">Gmail, Yahoo, Outlook, iCloud, and other email addresses are supported.</p>
+<label>Password<input type="password" name="password" autocomplete="current-password" required placeholder="Your password"></label>
 <button class="btn dark full" type="submit">Log in</button></form>
 <p class="auth-switch"><a href="{{ url_for('forgot_password') }}">Forgot your password?</a></p>
 <p class="auth-switch"><a href="{{ url_for('resend_verification') }}">Resend verification email</a></p>
