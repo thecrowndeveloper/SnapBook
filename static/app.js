@@ -24,7 +24,11 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape") closeMenu();
+      if (event.key === "Escape" &&
+          menuButton.getAttribute("aria-expanded") === "true") {
+        closeMenu();
+        menuButton.focus();
+      }
     });
 
     document.addEventListener("click", (event) => {
