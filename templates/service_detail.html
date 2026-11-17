@@ -17,7 +17,7 @@
         <form method="POST" action="{{ url_for('request_service', service_id=service.id) }}" class="booking-form">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <label>Preferred date<input type="date" name="requested_date" required></label>
-          <label>Project details<textarea name="client_message" rows="4" maxlength="2000" placeholder="Tell the professional what you need..."></textarea></label>
+          <label>Project details<textarea name="client_message" aria-describedby="project-details-help" rows="4" maxlength="2000" placeholder="Tell the professional what you need..."></textarea><small class="muted" id="project-details-help">Optional. Maximum 2,000 characters.</small></label>
           <button class="btn dark full" type="submit">Send service request</button>
         </form>
       {% elif not current_user.is_authenticated %}
