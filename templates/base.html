@@ -11,15 +11,17 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='onecre8-original-home-restored-20261112') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='onecre8-readable-type.css', v='20261117-readable-type') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='onecre8-readable-type.css', v='20261117-a11y-nav') }}">
 </head>
 <body>
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
 
 <header class="topbar">
   <a class="logo" href="{{ url_for('home') }}" aria-label="OneCre8 Media home"><img src="{{ url_for('static', filename='images/onecre8-media-logo.svg') }}" alt="OneCre8 Media"></a>
 
   <button class="mobile-menu-toggle" type="button" aria-label="Open navigation menu" aria-controls="primary-navigation" aria-expanded="false"><span></span><span></span><span></span></button>
- <nav id="primary-navigation" class="primary-navigation">
+ <nav id="primary-navigation" class="primary-navigation" aria-label="Site navigation">
     <a href="{{ url_for('home') }}">Explore</a>
 
     {% if current_user.is_authenticated %}
@@ -42,11 +44,11 @@
 </nav> 
 </header>
 
-<main>
+<main id="main-content" tabindex="-1">
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
       {% for category, message in messages %}
-        <div class="notice {{ category }}">{{ message }}</div>
+        <div class="notice {{ category }}" role="{{ 'alert' if category == 'error' else 'status' }}" aria-live="{{ 'assertive' if category == 'error' else 'polite' }}" aria-atomic="true">{{ message }}</div>
       {% endfor %}
     {% endif %}
   {% endwith %}
