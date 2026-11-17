@@ -1,0 +1,73 @@
+/* ONECRE8 MEDIA — SITE-WIDE READABLE TYPE
+   A consistent 16px minimum for supporting copy and interface text.
+   All values use rem so browser font preferences are respected. */
+
+html { font-size: 100%; }
+
+body {
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+/* Main copy, descriptions, metadata and secondary information */
+body :where(
+  p, li, label, small, summary, figcaption, blockquote,
+  .muted, .sub, .bio, .specialty, .tag, .price, .filter-state,
+  .directory-foot, .text-link, .availability, .calendar-note,
+  .total, .fine, .optional, .notice, .back,
+  .hero-proof strong, .hero-proof small, .image-note b, .image-note small,
+  .hero-index, .hero-bottom, .category-tile span,
+  .showcase-type, .showcase-description, .showcase-open,
+  .showcase-seller, .showcase-seller small, .showcase-seller a,
+  .showcase-price, .showcase-see-all, .showcase-empty,
+  .public-profile-owner, .public-profile-location, .public-profile-nav a,
+  .public-service-mode, .public-service-description, .public-service-link,
+  .public-service-card-footer, .public-profile-bottom a,
+  .public-profile-bio, .public-portfolio-caption,
+  .public-empty-state, .auth-provider-note, .auth-switch,
+  .auth-or, .legal-check, .legal-draft-notice, .legal-section p,
+  .workspace-stat span, .service-listing p, .service-listing h3,
+  .status, .mini-btn, th, td
+) {
+  font-size: 1rem !important;
+  line-height: 1.65;
+}
+
+/* Form controls and navigation must remain comfortably readable */
+body :where(
+  .topbar nav, .topbar nav a, .topbar nav button,
+  .page-nav, .btn, button, input, select, textarea,
+  .booking-form label, .filters label span, .filters select,
+  .status-form select, .mini-btn, .btn-google
+) {
+  font-size: 1rem !important;
+}
+
+/* Compact all-caps labels stay secondary, but are no longer tiny */
+body :where(.eyebrow, .showcase-heading .eyebrow, .public-profile-intro .eyebrow) {
+  font-size: .9375rem !important;
+  line-height: 1.5;
+  letter-spacing: .08em;
+}
+
+/* Keep headings distinct and readable */
+body h1 { line-height: 1.12; }
+body h2 { line-height: 1.2; }
+body h3, body h4 { line-height: 1.3; }
+
+/* Let enlarged text wrap instead of being clipped */
+body :where(
+  .showcase-card, .showcase-card-body, .showcase-seller,
+  .dashboard .workspace-card, .auth-card, .legal-document,
+  .card-body, .booking-form, .profile-info, .notice
+) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Do not shrink readable text in small-screen layouts */
+@media (max-width: 700px) {
+  body :where(.topbar nav, .page-nav, .hero-bottom, footer) {
+    font-size: .9375rem !important;
+  }
+}
