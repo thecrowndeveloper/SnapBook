@@ -3,7 +3,7 @@ name: Generate optimized WebP images
 on:
   push:
     branches:
-      - main
+      - '**'
   workflow_dispatch:
 
 permissions:
@@ -43,5 +43,5 @@ jobs:
             echo "WebP images are already up to date."
           else
             git commit -m "Add optimized WebP image assets"
-            git push origin main
+            git push origin "${GITHUB_REF_NAME}"
           fi
