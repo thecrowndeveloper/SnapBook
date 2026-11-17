@@ -160,3 +160,21 @@ body :where(input, select, textarea):focus-visible {
 #main-content:focus {
   outline: none;
 }
+
+
+/* Accessible grouping for related registration choices. */
+.category-fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid var(--line, #e8e0d3);
+  border-radius: 12px;
+}
+.category-fieldset legend {
+  padding: 0 .35rem;
+  font-weight: 700;
+  color: var(--ink, #29251f);
+}
+.category-fieldset:focus-within {
+  border-color: #805a2b;
+}
