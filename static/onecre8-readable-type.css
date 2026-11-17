@@ -71,3 +71,55 @@ body :where(
     font-size: .9375rem !important;
   }
 }
+
+
+/* WCAG 2.2 AA contrast and keyboard-focus improvements.
+   Keep the warm OneCre8 palette; use deeper gold for meaningful text. */
+:root {
+  --muted: #6f6a61;
+  --gold-dark: #805a2b;
+}
+
+/* Readable secondary text on both white and warm cream surfaces. */
+body :where(
+  .muted, .sub, .fine, .optional, .bio, .specialty,
+  .showcase-type, .showcase-description, .showcase-seller small,
+  .showcase-heading > div > p:last-child, .showcase-intro > p:last-child,
+  .public-profile-owner, .public-profile-location,
+  .public-service-mode, .public-service-description,
+  .public-portfolio-caption p, .public-empty-state p,
+  .directory-foot, .auth-or, .auth-provider-note,
+  .legal-section p, .hero-proof small
+) {
+  color: #625d54;
+}
+
+/* Meaningful gold links and labels must remain legible at normal text sizes. */
+body :where(
+  a, .eyebrow, .tag, .specialty, .showcase-type,
+  .showcase-see-all, .public-service-link, .public-profile-bottom a,
+  .legal-check a, .auth-switch a, .empty a
+) {
+  text-decoration-color: currentColor;
+}
+
+body :where(
+  .eyebrow, .tag, .specialty, .showcase-type,
+  .showcase-see-all, .public-service-link, .public-profile-bottom a,
+  .legal-check a, .auth-switch a, .empty a,
+  .text-link, .directory-foot a, .topbar nav a:hover
+) {
+  color: #805a2b;
+}
+
+/* A high-contrast focus ring for keyboard users on light and dark surfaces. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid #805a2b !important;
+  outline-offset: 3px;
+}
+
+/* Keep form focus visible without relying on a faint translucent shadow. */
+body :where(input, select, textarea):focus-visible {
+  border-color: #805a2b !important;
+  box-shadow: 0 0 0 2px rgba(128, 90, 43, .18) !important;
+}
