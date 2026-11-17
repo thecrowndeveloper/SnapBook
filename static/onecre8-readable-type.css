@@ -178,3 +178,10 @@ body :where(input, select, textarea):focus-visible {
 .category-fieldset:focus-within {
   border-color: #805a2b;
 }
+
+
+/* The global bronze focus ring is slightly below 3:1 on the dark closing CTA.
+   Use the brighter brand gold on this dark surface for clear keyboard focus. */
+.closing .btn:focus-visible {
+  outline-color: #c9a36a !important;
+}
