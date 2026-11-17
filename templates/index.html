@@ -35,7 +35,7 @@
     </label>
     <label class="search-field category-field">
       <span>CATEGORY</span>
-      <select name="category" onchange="this.form.requestSubmit()">
+      <select name="category">
         <option value="">All categories</option>
         {% for category in categories %}
           <option value="{{ category.slug }}" {% if category_slug == category.slug %}selected{% endif %}>{{ category.name }}</option>

@@ -59,13 +59,15 @@ document.addEventListener("DOMContentLoaded", () => {
     update();
   }
 
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
   const pageNav = document.querySelector(".page-nav");
   if (pageNav) {
     const updatePageNav = () => {
       pageNav.classList.toggle("is-visible", window.scrollY > 240);
     };
     window.addEventListener("scroll", updatePageNav, { passive: true });
-    pageNav.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+    pageNav.addEventListener("click", () => window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" }));
     updatePageNav();
   }
 
@@ -75,7 +77,7 @@ document.addEventListener("DOMContentLoaded", () => {
     wrap.querySelectorAll("[data-scroll]").forEach((button) => {
       button.addEventListener("click", () => {
         const direction = button.dataset.scroll === "right" ? 1 : -1;
-        track.scrollBy({ left: direction * track.clientWidth * 0.85, behavior: "smooth" });
+        track.scrollBy({ left: direction * track.clientWidth * 0.85, behavior: reduceMotion ? "auto" : "smooth" });
       });
     });
   });
