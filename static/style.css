@@ -2919,7 +2919,7 @@ footer .footer-logo { font-size: 21px; }
     width: 100% !important;
     padding: 13px 4px !important;
     text-align: left !important;
-    font-size: 15px !important;
+    font-size: 1rem !important;
     color: #171715 !important;
     border-bottom: 1px solid #eee9df !important;
   }
