@@ -16,7 +16,7 @@
     </div>
   </div>
   <div class="hero-visual hero-photo-wrap">
-    <img class="hero-main" src="{{ url_for('static', filename='images/photo1.jpg') }}" alt="Creative professional capturing a moment">
+    <picture><source srcset="{{ url_for('static', filename='images/photo1.webp') }}" type="image/webp"><img class="hero-main" src="{{ url_for('static', filename='images/photo1.jpg') }}" alt="Creative professional capturing a moment" fetchpriority="high" decoding="async"></picture>
     <div class="hero-photo-caption">CREATIVITY, CONNECTED · ABUJA · LAGOS · AND BEYOND</div>
   </div>
 </section>
@@ -73,7 +73,7 @@
   {% else %}
     <article class="showcase-card showcase-inspiration-slide">
       <div class="showcase-image showcase-empty-image">
-        <img src="{{ url_for('static', filename='images/' ~ fallback) }}" alt="{{ category_slug|replace('-', ' ')|title }} category inspiration, image 1" loading="lazy">
+        <picture><source srcset="{{ url_for('static', filename='images/' ~ fallback.rsplit('.', 1)[0] ~ '.webp') }}" type="image/webp"><img src="{{ url_for('static', filename='images/' ~ fallback) }}" alt="{{ category_slug|replace('-', ' ')|title }} category inspiration, image 1" loading="lazy" decoding="async"></picture>
       </div>
       <div class="showcase-card-body">
         <span class="showcase-type">CATEGORY INSPIRATION · NOT A USER PORTFOLIO</span>
@@ -82,7 +82,7 @@
     </article>
     <article class="showcase-card showcase-inspiration-slide">
       <div class="showcase-image showcase-empty-image">
-        <img src="{{ url_for('static', filename='images/' ~ secondary_fallback) }}" alt="{{ category_slug|replace('-', ' ')|title }} category inspiration, image 2" loading="lazy">
+        <picture><source srcset="{{ url_for('static', filename='images/' ~ secondary_fallback.rsplit('.', 1)[0] ~ '.webp') }}" type="image/webp"><img src="{{ url_for('static', filename='images/' ~ secondary_fallback) }}" alt="{{ category_slug|replace('-', ' ')|title }} category inspiration, image 2" loading="lazy" decoding="async"></picture>
       </div>
       <div class="showcase-card-body">
         <span class="showcase-type">CATEGORY INSPIRATION · NOT A USER PORTFOLIO</span>
@@ -94,7 +94,7 @@
   {% for image_path in inspiration_images %}
     <article class="showcase-card showcase-inspiration-slide">
       <div class="showcase-image showcase-empty-image">
-        <img src="{{ url_for('static', filename='images/' ~ image_path) }}" alt="{{ category_slug|replace('-', ' ')|title }} category inspiration" loading="lazy">
+        <picture><source srcset="{{ url_for('static', filename='images/' ~ image_path.rsplit('.', 1)[0] ~ '.webp') }}" type="image/webp"><img src="{{ url_for('static', filename='images/' ~ image_path) }}" alt="{{ category_slug|replace('-', ' ')|title }} category inspiration" loading="lazy" decoding="async"></picture>
       </div>
       <div class="showcase-card-body">
         <span class="showcase-type">CATEGORY INSPIRATION · NOT A USER PORTFOLIO</span>
@@ -132,7 +132,7 @@
   {% else %}
     <article class="showcase-card showcase-inspiration-slide">
       <div class="showcase-image showcase-empty-image">
-        <img src="{{ url_for('static', filename='images/' ~ fallback) }}" alt="{{ category_slug|replace('-', ' ')|title }} category inspiration, image 1" loading="lazy">
+        <picture><source srcset="{{ url_for('static', filename='images/' ~ fallback.rsplit('.', 1)[0] ~ '.webp') }}" type="image/webp"><img src="{{ url_for('static', filename='images/' ~ fallback) }}" alt="{{ category_slug|replace('-', ' ')|title }} category inspiration, image 1" loading="lazy" decoding="async"></picture>
       </div>
       <div class="showcase-card-body">
         <span class="showcase-type">CATEGORY INSPIRATION · NOT A USER PORTFOLIO</span>
@@ -141,7 +141,7 @@
     </article>
     <article class="showcase-card showcase-inspiration-slide">
       <div class="showcase-image showcase-empty-image">
-        <img src="{{ url_for('static', filename='images/' ~ secondary_fallback) }}" alt="{{ category_slug|replace('-', ' ')|title }} category inspiration, image 2" loading="lazy">
+        <picture><source srcset="{{ url_for('static', filename='images/' ~ secondary_fallback.rsplit('.', 1)[0] ~ '.webp') }}" type="image/webp"><img src="{{ url_for('static', filename='images/' ~ secondary_fallback) }}" alt="{{ category_slug|replace('-', ' ')|title }} category inspiration, image 2" loading="lazy" decoding="async"></picture>
       </div>
       <div class="showcase-card-body">
         <span class="showcase-type">CATEGORY INSPIRATION · NOT A USER PORTFOLIO</span>
