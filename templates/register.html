@@ -6,23 +6,22 @@
 <p class="muted">Join as a client or register as a creative professional.</p>
 <form method="POST" class="booking-form" enctype="multipart/form-data">
 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-<label>Account type<select name="role" id="account-role">
+<label>Account type<select name="role" id="account-role" aria-controls="provider-fields" required>
 <option value="client" {% if role == 'client' %}selected{% endif %}>Client</option>
 <option value="provider" {% if role == 'provider' %}selected{% endif %}>Creative Professional</option>
 </select></label>
-<label>Full name<input name="name" required placeholder="Your full name"></label>
+<label>Full name<input name="name" autocomplete="name" required placeholder="Your full name"></label>
 <div id="provider-fields" {% if role != 'provider' %}hidden{% endif %}>
 <div class="auth-divider"></div><p class="eyebrow">CREATIVE PROFESSIONAL PROFILE</p>
 <label>Business or professional name<input name="business_name" placeholder="Your business name"></label>
 <label>City<input name="city" placeholder="e.g. Abuja"></label>
 <label>Short biography<textarea name="bio" rows="3" placeholder="Tell customers about your work..."></textarea></label>
 <label class="profile-upload-field">Professional profile picture<input type="file" name="profile_image" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"><small class="muted">Optional for now.</small></label>
-<p><strong>What services do you offer?</strong></p><p class="muted">Select all categories that apply.</p>
-<div class="category-options">{% for category in categories %}<label><input type="checkbox" name="category_ids" value="{{ category.id }}"> {{ category.name }}</label>{% endfor %}</div>
+<fieldset class="category-fieldset" aria-describedby="category-help"><legend>What services do you offer?</legend><p class="muted" id="category-help">Select all categories that apply. Choose at least one category to continue.</p><div class="category-options">{% for category in categories %}<label><input type="checkbox" name="category_ids" value="{{ category.id }}"> {{ category.name }}</label>{% endfor %}</div></fieldset>
 </div>
 <div class="auth-divider"></div><p class="eyebrow">CREATE WITH EMAIL</p><p class="muted auth-provider-note">Use any valid email address, including Gmail, Yahoo, Outlook, iCloud, or your work email. You do not need a Google account.</p>
-<label>Email address<input type="email" name="email" placeholder="you@example.com"></label>
-<label>Password<input type="password" name="password" minlength="8" placeholder="At least 8 characters"></label>
+<label>Email address<input type="email" name="email" autocomplete="email" required placeholder="you@example.com"></label>
+<label>Password<input type="password" name="password" minlength="8" autocomplete="new-password" aria-describedby="registration-password-help" required placeholder="At least 8 characters"></label><p class="muted" id="registration-password-help">Use at least 8 characters.</p>
 <p class="muted">After registration, we’ll send a verification link to your email. You must verify it before logging in.</p>
 <div class="legal-acceptance"><p><strong>Before creating your account</strong></p>
 <label class="legal-check"><input type="checkbox" name="accept_terms" value="yes" required> I agree to the <a href="{{ url_for('legal_document', slug='terms') }}" target="_blank" rel="noopener">General Terms and Conditions</a></label>
@@ -47,7 +46,7 @@
 const roleSelect=document.getElementById("account-role"), providerFields=document.getElementById("provider-fields");
 const clientAgreement=document.getElementById("client-agreement"), professionalAgreement=document.getElementById("professional-agreement");
 const clientCheck=clientAgreement.querySelector("input"), professionalCheck=professionalAgreement.querySelector("input");
-function updateRegistrationFields(){const isProvider=roleSelect.value==="provider";providerFields.hidden=!isProvider;clientAgreement.hidden=isProvider;professionalAgreement.hidden=!isProvider;clientCheck.required=!isProvider;professionalCheck.required=isProvider;providerFields.querySelectorAll('input:not([type="checkbox"]):not([type="file"]), textarea').forEach(field=>field.required=isProvider);}
+function updateRegistrationFields(){const isProvider=roleSelect.value==="provider";providerFields.hidden=!isProvider;clientAgreement.hidden=isProvider;professionalAgreement.hidden=!isProvider;clientCheck.required=!isProvider;professionalCheck.required=isProvider;providerFields.querySelectorAll('[name="city"], [name="bio"]').forEach(field=>field.required=isProvider);}
 roleSelect.addEventListener("change",updateRegistrationFields);updateRegistrationFields();
 </script>
 {% endblock %}
