@@ -3342,3 +3342,122 @@ footer .footer-logo img { display:block; width:165px; height:auto; }
   min-height: 0;
   margin: 8px 0 0;
 }
+
+/* ONECRE8 ACCESSIBILITY TYPOGRAPHY BASELINE
+   Respect the visitor's browser font-size preference and improve readability.
+   Keep spacing, image dimensions, and decorative micro-labels independent. */
+html {
+  font-size: 100%;
+}
+
+body {
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+/* Primary reading text and descriptions */
+p,
+li,
+.muted,
+.sub,
+.bio,
+.showcase-description,
+.showcase-intro > p:last-child,
+.showcase-heading > div > p:last-child,
+.public-profile-bio,
+.public-service-description,
+.public-portfolio-caption p,
+.public-empty-state p,
+.legal-section p,
+.auth-provider-note {
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+/* Navigation, form labels, fields, and interactive controls */
+.topbar nav,
+.topbar nav a,
+.topbar nav .nav-link-button,
+.page-nav,
+.booking-form label,
+.filters label span,
+.booking-form input,
+.booking-form select,
+.booking-form textarea,
+.status-form select,
+.filters select,
+.btn,
+button,
+input,
+select,
+textarea {
+  font-size: 1rem;
+}
+
+.booking-form label.legal-check,
+.auth-card .booking-form label.legal-check,
+.legal-check,
+.legal-draft-notice {
+  font-size: 0.9375rem;
+  line-height: 1.65;
+}
+
+/* Marketplace card details and secondary information */
+.tag,
+.price,
+.price small,
+.specialty,
+.text-link,
+.directory-foot,
+.directory-foot a,
+.stats span,
+.availability,
+.calendar-note,
+.total,
+.fine,
+.optional,
+.showcase-type,
+.showcase-open,
+.showcase-seller small,
+.showcase-seller a,
+.showcase-price,
+.showcase-see-all,
+.showcase-empty > span,
+.showcase-empty p,
+.showcase-empty a,
+.profile-upload-field small,
+.public-profile-owner,
+.public-profile-location,
+.public-profile-nav a,
+.public-service-mode,
+.public-service-link,
+.public-service-card-footer strong,
+.public-profile-bottom a,
+.dashboard .workspace-stat span,
+.dashboard .workspace-card h2 small,
+.dashboard .service-listing h3,
+.dashboard .workspace-card article.workspace-card h3 {
+  font-size: 0.9375rem;
+}
+
+/* Keep eyebrow labels legible without making them compete with headings. */
+.eyebrow,
+.showcase-heading .eyebrow,
+.public-profile-intro .eyebrow {
+  font-size: 0.875rem;
+}
+
+/* Ensure the legal document hierarchy remains clear at enlarged text sizes. */
+.legal-section h2 {
+  font-size: 1.25rem;
+  line-height: 1.35;
+}
+
+/* Avoid clipped text when users enlarge browser text. */
+.showcase-card,
+.showcase-card-body,
+.dashboard .workspace-card,
+.auth-card,
+.legal-document {
+  min-width: 0;
+}
