@@ -40,10 +40,16 @@ app = Flask(__name__)
 app.config["SEND_FILE_MAX_AGE_DEFAULT"] = timedelta(days=7)
 # Trust Railway's forwarded HTTPS scheme so OAuth callbacks use the public HTTPS URL.
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
-app.secret_key = os.environ.get(
-    "SECRET_KEY",
-    "local-development-secret-change-before-deployment"
-)
+secret_key = os.environ.get("SECRET_KEY", "").strip()
+if not secret_key:
+    if os.environ.get("RAILWAY_PROJECT_ID"):
+        raise RuntimeError(
+            "SECRET_KEY must be configured before starting the production application."
+        )
+    # Local development only. Production environments must provide a secret.
+    secret_key = "local-development-secret-change-before-deployment"
+
+app.secret_key = secret_key
 
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
