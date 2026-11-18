@@ -509,6 +509,13 @@ def init_db():
         """)
 
         add_column_if_missing(con, "marketplace_bookings", "agreed_price", "REAL")
+        add_column_if_missing(con, "marketplace_bookings", "request_type", "TEXT NOT NULL DEFAULT 'booking'")
+        add_column_if_missing(con, "marketplace_bookings", "requested_time", "TEXT NOT NULL DEFAULT ''")
+        add_column_if_missing(con, "marketplace_bookings", "duration_minutes", "INTEGER NOT NULL DEFAULT 60")
+        add_column_if_missing(con, "marketplace_bookings", "session_count", "INTEGER NOT NULL DEFAULT 1")
+        add_column_if_missing(con, "marketplace_bookings", "location", "TEXT NOT NULL DEFAULT ''")
+        add_column_if_missing(con, "marketplace_bookings", "participants", "INTEGER NOT NULL DEFAULT 1")
+
 
         con.execute("""
             CREATE INDEX IF NOT EXISTS idx_marketplace_bookings_client
@@ -2207,6 +2214,125 @@ def create_service():
 
 
 
+@app.route("/provider/<int:provider_id>/contact", methods=["GET", "POST"])
+@login_required
+def start_provider_conversation(provider_id):
+    role_required("client")
+
+    with connect() as con:
+        provider = con.execute(
+            "SELECT id, user_id, display_name, business_name FROM providers WHERE id = ?",
+            (provider_id,),
+        ).fetchone()
+        if not provider:
+            abort(404)
+        if provider["user_id"] == current_user.id:
+            abort(403)
+
+        services = con.execute("""
+            SELECT id, title, pricing_mode, price, booking_mode
+            FROM services
+            WHERE provider_id = ? AND is_active = 1
+            ORDER BY title
+        """, (provider_id,)).fetchall()
+
+        if request.method == "POST":
+            restriction = messaging_restriction_for(current_user.id, con)
+            if restriction:
+                flash(
+                    f"Messaging is temporarily restricted on this account until {restriction['ends_at']}.",
+                    "error",
+                )
+                return redirect(url_for("message_inbox"))
+
+            try:
+                service_id = int(request.form.get("service_id", ""))
+            except ValueError:
+                flash("Please choose a service to discuss.", "error")
+                return redirect(url_for("start_provider_conversation", provider_id=provider_id))
+
+            body = request.form.get("body", "").strip()
+            if not body or len(body) > 2000:
+                flash("Please write a message of up to 2,000 characters.", "error")
+                return redirect(url_for("start_provider_conversation", provider_id=provider_id))
+            if detect_message_contact_violation(body):
+                flash(
+                    "Message not sent. Personal contact details, external links and off-platform payment arrangements are not allowed. Please edit your message and keep the conversation on OneCre8.",
+                    "error",
+                )
+                return redirect(url_for("start_provider_conversation", provider_id=provider_id))
+
+            con.execute("BEGIN IMMEDIATE")
+            service = con.execute("""
+                SELECT id, provider_id, title, pricing_mode, price
+                FROM services
+                WHERE id = ? AND provider_id = ? AND is_active = 1
+            """, (service_id, provider_id)).fetchone()
+            if not service:
+                flash("That service is no longer available. Please choose another.", "error")
+                return redirect(url_for("start_provider_conversation", provider_id=provider_id))
+
+            existing = con.execute("""
+                SELECT id FROM marketplace_bookings
+                WHERE service_id = ? AND provider_id = ? AND client_user_id = ?
+                  AND request_type = 'enquiry'
+                  AND status NOT IN ('Cancelled', 'Completed')
+                ORDER BY id DESC LIMIT 1
+            """, (service_id, provider_id, current_user.id)).fetchone()
+
+            if existing:
+                booking_id = existing["id"]
+            else:
+                cursor = con.execute("""
+                    INSERT INTO marketplace_bookings (
+                        service_id, provider_id, client_user_id, requested_date,
+                        client_message, agreed_price, request_type
+                    )
+                    VALUES (?, ?, ?, '', ?, NULL, 'enquiry')
+                """, (service_id, provider_id, current_user.id, body))
+                booking_id = cursor.lastrowid
+
+            con.execute(
+                "INSERT OR IGNORE INTO marketplace_conversations (booking_id) VALUES (?)",
+                (booking_id,),
+            )
+            conversation = con.execute(
+                "SELECT id FROM marketplace_conversations WHERE booking_id = ?",
+                (booking_id,),
+            ).fetchone()
+            con.execute("""
+                INSERT INTO marketplace_messages (conversation_id, sender_user_id, body)
+                VALUES (?, ?, ?)
+            """, (conversation["id"], current_user.id, body))
+            con.execute(
+                "UPDATE marketplace_bookings SET updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                (booking_id,),
+            )
+            if provider["user_id"]:
+                con.execute("""
+                    INSERT INTO notifications (
+                        user_id, title, message, notification_type, related_id
+                    ) VALUES (?, ?, ?, 'marketplace_message', ?)
+                """, (
+                    provider["user_id"],
+                    "New client enquiry",
+                    f"{current_user.name} sent you a message about {service['title']}.",
+                    booking_id,
+                ))
+
+            flash("Your message has been sent. You can continue the conversation here.", "success")
+            return redirect(url_for("booking_messages", booking_id=booking_id))
+
+    if not services:
+        flash("This creative professional has not published a service yet.", "info")
+    return render_template(
+        "message_start.html",
+        provider=provider,
+        services=services,
+        selected_service_id=request.args.get("service_id", ""),
+    )
+
+
 @app.route("/service/<int:service_id>")
 def service_detail(service_id):
     with connect() as con:
@@ -2285,14 +2411,31 @@ def request_service(service_id):
     role_required("client")
 
     requested_date = request.form.get("requested_date", "").strip()
+    requested_time = request.form.get("requested_time", "").strip()
     client_message = request.form.get("client_message", "").strip()
-
-    if not requested_date:
-        flash("Please select your preferred service date.", "error")
+    location = request.form.get("location", "").strip()
+    try:
+        duration_minutes = int(request.form.get("duration_minutes", "60"))
+        session_count = int(request.form.get("session_count", "1"))
+        participants = int(request.form.get("participants", "1"))
+    except ValueError:
+        flash("Please enter valid session details.", "error")
         return redirect(request.referrer or url_for("home"))
 
-    if len(client_message) > 2000:
-        flash("Your message must not exceed 2,000 characters.", "error")
+    if requested_date:
+        try:
+            selected_date = datetime.strptime(requested_date, "%Y-%m-%d").date()
+            if selected_date < datetime.now().date():
+                raise ValueError
+        except ValueError:
+            flash("Please choose a valid date that is not in the past.", "error")
+            return redirect(request.referrer or url_for("home"))
+
+    if len(client_message) > 2000 or len(location) > 250:
+        flash("Please shorten your project details or location.", "error")
+        return redirect(request.referrer or url_for("home"))
+    if not 15 <= duration_minutes <= 1440 or not 1 <= session_count <= 20 or not 1 <= participants <= 100:
+        flash("Choose a session duration between 15 minutes and 24 hours, 1–20 sessions and 1–100 participants.", "error")
         return redirect(request.referrer or url_for("home"))
 
     with connect() as con:
@@ -2317,6 +2460,9 @@ def request_service(service_id):
             return redirect(url_for(
                 "public_provider", provider_id=service["provider_id"]
             ))
+        if service["booking_mode"] == "booking" and not requested_date:
+            flash("Please select your preferred service date.", "error")
+            return redirect(request.referrer or url_for("service_detail", service_id=service_id))
 
         existing = con.execute("""
             SELECT id
@@ -2335,13 +2481,17 @@ def request_service(service_id):
         booking = con.execute("""
             INSERT INTO marketplace_bookings (
                 service_id, provider_id, client_user_id,
-                requested_date, client_message, agreed_price
+                requested_date, requested_time, duration_minutes,
+                session_count, location, participants, client_message,
+                agreed_price, request_type
             )
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             service_id, service["provider_id"], current_user.id,
-            requested_date, client_message,
-            service["price"] if service["pricing_mode"] == "fixed" else None
+            requested_date, requested_time, duration_minutes,
+            session_count, location, participants, client_message,
+            service["price"] if service["pricing_mode"] == "fixed" else None,
+            "booking" if service["booking_mode"] == "booking" else "enquiry"
         ))
 
         if service["user_id"]:
