@@ -1,6 +1,7 @@
 """Small, dependency-free regression checks for the public marketplace entry points."""
 
 import os
+import io
 import tempfile
 import unittest
 from html.parser import HTMLParser
@@ -107,6 +108,34 @@ class HomepageRegressionTests(unittest.TestCase):
         )
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("SECRET_KEY must be configured", result.stderr)
+
+
+
+class PortfolioUploadValidationTests(unittest.TestCase):
+    def test_video_upload_rejects_empty_file(self):
+        from types import SimpleNamespace
+        from app import validate_video_upload_size
+
+        uploaded = SimpleNamespace(stream=io.BytesIO(b""))
+        with self.assertRaisesRegex(ValueError, "empty"):
+            validate_video_upload_size(uploaded)
+
+    def test_video_upload_rejects_file_over_50_mb(self):
+        from types import SimpleNamespace
+        from app import MAX_VIDEO_UPLOAD_BYTES, validate_video_upload_size
+
+        uploaded = SimpleNamespace(
+            stream=io.BytesIO(b"x" * (MAX_VIDEO_UPLOAD_BYTES + 1))
+        )
+        with self.assertRaisesRegex(ValueError, "50 MB"):
+            validate_video_upload_size(uploaded)
+
+    def test_video_upload_accepts_file_within_size_limit(self):
+        from types import SimpleNamespace
+        from app import validate_video_upload_size
+
+        uploaded = SimpleNamespace(stream=io.BytesIO(b"valid-size-placeholder"))
+        self.assertEqual(validate_video_upload_size(uploaded), 22)
 
 
 if __name__ == "__main__":
