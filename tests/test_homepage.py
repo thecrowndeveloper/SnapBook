@@ -39,6 +39,20 @@ class HomepageRegressionTests(unittest.TestCase):
         app.config.update(TESTING=True)
         cls.client = app.test_client()
 
+    def test_homepage_includes_baseline_security_headers(self):
+        response = self.client.get("/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers.get("X-Content-Type-Options"), "nosniff")
+        self.assertEqual(response.headers.get("X-Frame-Options"), "DENY")
+        self.assertEqual(
+            response.headers.get("Referrer-Policy"),
+            "strict-origin-when-cross-origin",
+        )
+        self.assertEqual(
+            response.headers.get("Permissions-Policy"),
+            "camera=(), microphone=(), geolocation=()",
+        )
+
     def test_homepage_renders_all_eight_category_shelves(self):
         response = self.client.get("/")
         self.assertEqual(response.status_code, 200)
