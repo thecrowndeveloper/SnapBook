@@ -18,6 +18,7 @@
                         {{ booking.business_name or booking.professional_name }}</p>
                     <p><strong>Preferred date:</strong> {{ booking.requested_date }}</p>
                     <p><strong>Status:</strong> {{ booking.status }}</p>
+                    <a class="btn btn-primary" href="{{ url_for('booking_messages', booking_id=booking.id) }}">Open conversation</a>
                     {% if booking.payment_status == 'success' %}
                         <p class="muted">Payment verified · Sandbox transaction</p>
                     {% elif booking.payment_status == 'pending' %}
