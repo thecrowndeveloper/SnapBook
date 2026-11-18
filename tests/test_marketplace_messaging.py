@@ -265,6 +265,11 @@ class MarketplaceMessagingTests(unittest.TestCase):
 
     def make_restriction(self):
         with connect() as con:
+            # Keep each test isolated from any prior restriction on this account.
+            con.execute(
+                "UPDATE marketplace_messaging_restrictions SET active=0 WHERE user_id=?",
+                (self.provider_user_id,),
+            )
             conversation_id = con.execute(
                 "SELECT id FROM marketplace_conversations WHERE booking_id=?",
                 (self.booking_id,),
