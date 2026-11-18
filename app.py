@@ -121,6 +121,26 @@ PORTFOLIO_UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
 app.config["PORTFOLIO_UPLOAD_FOLDER"] = str(PORTFOLIO_UPLOAD_FOLDER)
 app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024
 
+MAX_VIDEO_UPLOAD_BYTES = 50 * 1024 * 1024
+
+
+def validate_video_upload_size(uploaded_file):
+    """Reject empty or oversized videos before writing them to persistent storage."""
+    stream = uploaded_file.stream
+    try:
+        stream.seek(0, os.SEEK_END)
+        file_size = stream.tell()
+        stream.seek(0)
+    except (AttributeError, OSError) as error:
+        raise ValueError("The video could not be read. Please try another file.") from error
+
+    if file_size <= 0:
+        raise ValueError("The selected video is empty.")
+    if file_size > MAX_VIDEO_UPLOAD_BYTES:
+        raise ValueError("Videos must not exceed 50 MB.")
+    return file_size
+
+
 def save_optimized_image(uploaded_file, filename, max_dimension):
     """Validate and resize an image before saving it as WebP."""
     destination = PORTFOLIO_UPLOAD_FOLDER / filename
@@ -2034,6 +2054,12 @@ def upload_portfolio():
             flash(str(error), "error")
             return redirect(url_for("provider_dashboard"))
     else:
+        try:
+            validate_video_upload_size(uploaded_file)
+        except ValueError as error:
+            flash(str(error), "error")
+            return redirect(url_for("provider_dashboard"))
+
         filename = uuid4().hex + ".mp4"
         file_path = PORTFOLIO_UPLOAD_FOLDER / filename
         uploaded_file.save(file_path)
