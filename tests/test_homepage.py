@@ -77,6 +77,18 @@ class HomepageRegressionTests(unittest.TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn("/login", response.headers.get("Location", ""))
 
+    def test_login_form_rejects_post_without_csrf_token(self):
+        response = self.client.post(
+            "/login",
+            data={"email": "nobody@example.com", "password": "not-a-real-password"},
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_login_page_renders_csrf_token_field(self):
+        response = self.client.get("/login")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('name="csrf_token"', response.get_data(as_text=True))
+
 
 if __name__ == "__main__":
     unittest.main()
