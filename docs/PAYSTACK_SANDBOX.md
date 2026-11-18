@@ -27,7 +27,8 @@ The webhook validates Paystack's timestamped `Paystack-Signature` against the ra
 - Client must be logged in and own the booking.
 - Booking must be accepted by the creative professional.
 - Only fixed-price, bookable services are eligible; quote/enquiry services are excluded.
-- The server reads the price from the service record and converts NGN to kobo.
+- The agreed fixed price is snapshotted when the client creates the booking; checkout uses that immutable booking price, not a later listing edit.
+- Older bookings created before price snapshots have no confirmed price and are deliberately excluded from checkout; create a fresh request to establish an agreed price.
 - Paystack's documented NGN minimum is enforced.
 - The reference is generated server-side and unique.
 - Callback and webhook both call Paystack's verify endpoint.
