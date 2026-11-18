@@ -3,26 +3,27 @@ from PIL import Image, ImageOps
 
 ROOT = Path(__file__).resolve().parents[1]
 IMAGE_DIRS = [
+    ROOT / "static" / "images" / "categories",
     ROOT / "static" / "images" / "categories" / "One-Cre8-Media",
 ]
 SINGLE_IMAGES = [
     ROOT / "static" / "images" / "photo1.jpg",
 ]
 
-sources = []
+sources = set()
 for directory in IMAGE_DIRS:
     if directory.exists():
-        sources.extend(sorted(directory.glob("*.jpg")))
-        sources.extend(sorted(directory.glob("*.jpeg")))
+        sources.update(directory.rglob("*.jpg"))
+        sources.update(directory.rglob("*.jpeg"))
 for path in SINGLE_IMAGES:
     if path.exists():
-        sources.append(path)
+        sources.add(path)
 
 converted = 0
 original_bytes = 0
 webp_bytes = 0
 
-for source in sources:
+for source in sorted(sources):
     destination = source.with_suffix(".webp")
     original_bytes += source.stat().st_size
 
@@ -32,7 +33,7 @@ for source in sources:
 
     webp_bytes += destination.stat().st_size
     converted += 1
-    print(f"{source.name}: {source.stat().st_size:,} -> {destination.stat().st_size:,} bytes")
+    print(f"{source.relative_to(ROOT)}: {source.stat().st_size:,} -> {destination.stat().st_size:,} bytes")
 
 if not converted:
     raise SystemExit("No source JPEG images were found; refusing to report a successful conversion.")
