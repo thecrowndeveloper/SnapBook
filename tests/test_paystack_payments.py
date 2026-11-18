@@ -71,8 +71,8 @@ class PaystackSandboxTests(unittest.TestCase):
         with connect() as con:
             cursor = con.execute(
                 """INSERT INTO marketplace_bookings
-                   (service_id, provider_id, client_user_id, requested_date, status)
-                   VALUES (?, ?, ?, ?, 'Accepted')""",
+                   (service_id, provider_id, client_user_id, requested_date, status, agreed_price)
+                   VALUES (?, ?, ?, ?, 'Accepted', 75000)""",
                 (self.service_id, self.provider_id, self.client_id, "2030-06-01"),
             )
             self.booking_id = cursor.lastrowid
