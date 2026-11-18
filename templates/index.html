@@ -62,46 +62,19 @@
             {% if item.profile_image %}
               <img src="{{ item.profile_image }}" alt="" loading="lazy">
             {% else %}
-              <span class="showcase-avatar">{{ (item.business_name or item.display_name or 'C')[0]|upper }}</span>
-            {% endif %}
-            <span><small>OFFERED BY</small><a href="{{ url_for('public_provider', provider_id=item.provider_id) }}">{{ item.business_name or item.display_name }}</a><small>{{ item.city }}</small></span>
-          </div>
-          <div class="showcase-price">{% if item.pricing_mode == 'fixed' %}₦{{ "{:,.0f}".format(item.price or 0) }}{% else %}Request a quote{% endif %}</div>
+    {% for image_path in inspiration_images %}
+      <article class="showcase-card showcase-inspiration-slide">
+        <div class="showcase-image showcase-empty-image">
+          <picture><source srcset="{{ url_for('static', filename='images/' ~ image_path.rsplit('.', 1)[0] ~ '.webp') }}" type="image/webp"><img src="{{ url_for('static', filename='images/' ~ image_path) }}" alt="{{ category_slug|replace('-', ' ')|title }} category inspiration" loading="lazy" decoding="async"></picture>
+        </div>
+        <div class="showcase-card-body">
+          <span class="showcase-type">CATEGORY INSPIRATION · NOT A USER PORTFOLIO</span>
+          <p class="showcase-description">Explore creative possibilities in {{ category_slug|replace('-', ' ')|title }}.</p>
         </div>
       </article>
     {% endfor %}
-  {% else %}
-    <article class="showcase-card showcase-inspiration-slide">
-      <div class="showcase-image showcase-empty-image">
-        <picture><source srcset="{{ url_for('static', filename='images/' ~ fallback.rsplit('.', 1)[0] ~ '.webp') }}" type="image/webp"><img src="{{ url_for('static', filename='images/' ~ fallback) }}" alt="{{ category_slug|replace('-', ' ')|title }} category inspiration, image 1" loading="lazy" decoding="async"></picture>
-      </div>
-      <div class="showcase-card-body">
-        <span class="showcase-type">CATEGORY INSPIRATION · NOT A USER PORTFOLIO</span>
-        <p class="showcase-description">New services are being added to this collection.</p>
-      </div>
-    </article>
-    <article class="showcase-card showcase-inspiration-slide">
-      <div class="showcase-image showcase-empty-image">
-        <picture><source srcset="{{ url_for('static', filename='images/' ~ secondary_fallback.rsplit('.', 1)[0] ~ '.webp') }}" type="image/webp"><img src="{{ url_for('static', filename='images/' ~ secondary_fallback) }}" alt="{{ category_slug|replace('-', ' ')|title }} category inspiration, image 2" loading="lazy" decoding="async"></picture>
-      </div>
-      <div class="showcase-card-body">
-        <span class="showcase-type">CATEGORY INSPIRATION · NOT A USER PORTFOLIO</span>
-        <p class="showcase-description">New services are being added to this collection.</p>
-      </div>
-    </article>
   {% endif %}
 
-  {% for image_path in inspiration_images %}
-    <article class="showcase-card showcase-inspiration-slide">
-      <div class="showcase-image showcase-empty-image">
-        <picture><source srcset="{{ url_for('static', filename='images/' ~ image_path.rsplit('.', 1)[0] ~ '.webp') }}" type="image/webp"><img src="{{ url_for('static', filename='images/' ~ image_path) }}" alt="{{ category_slug|replace('-', ' ')|title }} category inspiration" loading="lazy" decoding="async"></picture>
-      </div>
-      <div class="showcase-card-body">
-        <span class="showcase-type">CATEGORY INSPIRATION · NOT A USER PORTFOLIO</span>
-        <p class="showcase-description">Explore creative possibilities in {{ category_slug|replace('-', ' ')|title }}.</p>
-      </div>
-    </article>
-  {% endfor %}
 {% endmacro %}
 
 {% macro product_showcase(items, fallback, secondary_fallback, category_slug, inspiration_images) %}
@@ -121,34 +94,19 @@
             {% if item.profile_image %}
               <img src="{{ item.profile_image }}" alt="" loading="lazy">
             {% else %}
-              <span class="showcase-avatar">{{ (item.business_name or item.display_name or 'C')[0]|upper }}</span>
-            {% endif %}
-            <span><small>OFFERED BY</small><a href="{{ url_for('public_provider', provider_id=item.provider_id) }}">{{ item.business_name or item.display_name }}</a><small>{{ item.city }}</small></span>
-          </div>
-          <div class="showcase-price">{% if item.price %}₦{{ "{:,.0f}".format(item.price) }}{% else %}Contact seller{% endif %}</div>
+    {% for image_path in inspiration_images %}
+      <article class="showcase-card showcase-inspiration-slide">
+        <div class="showcase-image showcase-empty-image">
+          <picture><source srcset="{{ url_for('static', filename='images/' ~ image_path.rsplit('.', 1)[0] ~ '.webp') }}" type="image/webp"><img src="{{ url_for('static', filename='images/' ~ image_path) }}" alt="{{ category_slug|replace('-', ' ')|title }} category inspiration" loading="lazy" decoding="async"></picture>
+        </div>
+        <div class="showcase-card-body">
+          <span class="showcase-type">CATEGORY INSPIRATION · NOT A USER PORTFOLIO</span>
+          <p class="showcase-description">Explore creative possibilities in {{ category_slug|replace('-', ' ')|title }}.</p>
         </div>
       </article>
     {% endfor %}
-  {% else %}
-    <article class="showcase-card showcase-inspiration-slide">
-      <div class="showcase-image showcase-empty-image">
-        <picture><source srcset="{{ url_for('static', filename='images/' ~ fallback.rsplit('.', 1)[0] ~ '.webp') }}" type="image/webp"><img src="{{ url_for('static', filename='images/' ~ fallback) }}" alt="{{ category_slug|replace('-', ' ')|title }} category inspiration, image 1" loading="lazy" decoding="async"></picture>
-      </div>
-      <div class="showcase-card-body">
-        <span class="showcase-type">CATEGORY INSPIRATION · NOT A USER PORTFOLIO</span>
-        <p class="showcase-description">New listings are being added to this collection.</p>
-      </div>
-    </article>
-    <article class="showcase-card showcase-inspiration-slide">
-      <div class="showcase-image showcase-empty-image">
-        <picture><source srcset="{{ url_for('static', filename='images/' ~ secondary_fallback.rsplit('.', 1)[0] ~ '.webp') }}" type="image/webp"><img src="{{ url_for('static', filename='images/' ~ secondary_fallback) }}" alt="{{ category_slug|replace('-', ' ')|title }} category inspiration, image 2" loading="lazy" decoding="async"></picture>
-      </div>
-      <div class="showcase-card-body">
-        <span class="showcase-type">CATEGORY INSPIRATION · NOT A USER PORTFOLIO</span>
-        <p class="showcase-description">New listings are being added to this collection.</p>
-      </div>
-    </article>
   {% endif %}
+
 {% endmacro %}
 
 
