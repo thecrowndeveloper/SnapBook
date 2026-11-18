@@ -26,6 +26,8 @@
         <a class="btn btn-primary" href="{{ url_for('start_provider_conversation', provider_id=provider.id) }}">Message professional</a>
       {% elif not current_user.is_authenticated %}
         <a class="btn btn-primary" href="{{ url_for('login', next=url_for('start_provider_conversation', provider_id=provider.id)) }}">Message professional</a>
+      {% elif current_user.role == 'provider' and current_user.id != provider.user_id %}
+        <p class="service-account-note">Client accounts can contact this professional and request services.</p>
       {% endif %}
     </div>
     {% if categories %}
