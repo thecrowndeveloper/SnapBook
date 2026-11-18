@@ -88,7 +88,7 @@ def _valid_webhook_signature(raw_body, headers, secret_key):
     return hmac.compare_digest(expected, legacy)
 
 
-def create_payment_blueprint(connect):
+def create_payment_blueprint(connect, csrf_protect=None):
     payments = Blueprint("payments", __name__)
 
     def record_verified_success(payment, verified):
@@ -160,6 +160,20 @@ def create_payment_blueprint(connect):
             except ValueError:
                 abort(400, description="The service price is not valid for checkout.")
 
+            pending_payment = con.execute(
+                """SELECT id FROM marketplace_payments
+                   WHERE booking_id = ? AND status = 'pending' LIMIT 1""",
+                (booking_id,),
+            ).fetchone()
+            if pending_payment:
+                abort(409, description="A payment attempt is already pending for this booking.")
+            successful_payment = con.execute(
+                """SELECT id FROM marketplace_payments
+                   WHERE booking_id = ? AND status = 'success' LIMIT 1""",
+                (booking_id,),
+            ).fetchone()
+            if successful_payment:
+                abort(409, description="This booking has already been paid.")
             pending_payment = con.execute(
                 """SELECT id FROM marketplace_payments
                    WHERE booking_id = ? AND status = 'pending' LIMIT 1""",
@@ -283,5 +297,8 @@ def create_payment_blueprint(connect):
 
         record_verified_success(payment, verified)
         return jsonify({"received": True}), 200
+
+    if csrf_protect is not None:
+        csrf_protect.exempt(payments.view_functions["paystack_webhook"])
 
     return payments
