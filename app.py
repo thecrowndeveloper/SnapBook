@@ -2513,6 +2513,15 @@ def request_service(service_id):
         ))
 
         if service["user_id"]:
+            notification_title = (
+                "New booking request" if request_type == "booking"
+                else "New service enquiry"
+            )
+            notification_message = (
+                f"{current_user.name} requested {service['title']} for {requested_date}."
+                if request_type == "booking"
+                else f"{current_user.name} sent an enquiry about {service['title']}."
+            )
             con.execute("""
                 INSERT INTO notifications (
                     user_id, title, message, notification_type, related_id
@@ -2520,8 +2529,8 @@ def request_service(service_id):
                 VALUES (?, ?, ?, ?, ?)
             """, (
                 service["user_id"],
-                "New service request",
-                f"{current_user.name} requested {service['title']} for {requested_date}.",
+                notification_title,
+                notification_message,
                 "marketplace_booking",
                 booking.lastrowid
             ))
