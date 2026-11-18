@@ -257,6 +257,7 @@ class User(UserMixin):
         self.id = row["id"]
         self.name = row["name"]
         self.email = row["email"]
+        self.email_verified_at = row["email_verified_at"]
         self.role = row["role"]
         self.password_hash = row["password_hash"]
 
@@ -1139,7 +1140,7 @@ def legal_documents():
 
 
 
-def is_onecre8_moderator(user_id, email=""):
+def is_onecre8_moderator(user_id, email="", email_verified_at=None):
     """Allow only explicitly configured moderator IDs or verified account emails."""
     configured_ids = {
         value.strip()
@@ -1153,7 +1154,8 @@ def is_onecre8_moderator(user_id, email=""):
     }
     normalized_email = (email or "").strip().casefold()
     return str(user_id) in configured_ids or (
-        bool(normalized_email) and normalized_email in configured_emails
+        bool(normalized_email) and bool(email_verified_at)
+        and normalized_email in configured_emails
     )
 
 
@@ -1174,7 +1176,10 @@ def messaging_restriction_for(user_id, con=None):
 def moderator_required():
     if not current_user.is_authenticated:
         return redirect(url_for("login"))
-    if not is_onecre8_moderator(current_user.id, current_user.email):
+    if not is_onecre8_moderator(
+        current_user.id, current_user.email,
+        getattr(current_user, "email_verified_at", None)
+    ):
         abort(404)
 
 
