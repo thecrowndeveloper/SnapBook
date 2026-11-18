@@ -127,6 +127,14 @@ class MarketplaceMessagingTests(unittest.TestCase):
 
     def test_blocked_message_is_not_saved_and_policy_event_is_logged(self):
         client = self.logged_in(self.client_id)
+        with connect() as con:
+            previous_messages = con.execute(
+                "SELECT COUNT(*) FROM marketplace_messages"
+            ).fetchone()[0]
+            previous_events = con.execute(
+                "SELECT COUNT(*) FROM message_policy_events WHERE booking_id=?",
+                (self.booking_id,),
+            ).fetchone()[0]
         response = client.post(
             f"/messages/{self.booking_id}",
             data={"body": "Call me on 08012345678"},
@@ -142,8 +150,8 @@ class MarketplaceMessagingTests(unittest.TestCase):
                 "SELECT COUNT(*) FROM message_policy_events WHERE booking_id=?",
                 (self.booking_id,),
             ).fetchone()[0]
-        self.assertEqual(count, 0)
-        self.assertEqual(events, 1)
+        self.assertEqual(count, previous_messages)
+        self.assertEqual(events, previous_events + 1)
 
 
     def make_png(self):
