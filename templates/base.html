@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preload" as="image" href="{{ url_for('static', filename='images/photo1.webp') }}" type="image/webp" fetchpriority="high">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='20261118-clear-service-actions-1') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='20261118-messages-link-clean-2') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='onecre8-readable-type.css', v='20261118-static-cache') }}">
 </head>
 <body>
@@ -33,7 +33,7 @@
             <a class="nav-messages-link" href="{{ url_for('message_inbox') }}">Messages</a>
         {% else %}
             <a href="{{ url_for('my_bookings') }}">My bookings</a>
-            <a href="{{ url_for('message_inbox') }}">Messages</a>
+            <a class="nav-messages-link" href="{{ url_for('message_inbox') }}">Messages</a>
         {% endif %}
 
         <form method="POST" action="{{ url_for('logout') }}" class="nav-logout">
