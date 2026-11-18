@@ -59,10 +59,6 @@ class ContactAndBookingFlowTests(unittest.TestCase):
                 "SELECT id FROM services WHERE title='Creative Consultation'"
             ).fetchone()["id"]
 
-    @classmethod
-    def tearDownClass(cls):
-        _STORAGE.cleanup()
-
     def logged_in(self, user_id):
         client = app.test_client()
         with client.session_transaction() as session:
