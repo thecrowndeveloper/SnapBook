@@ -162,7 +162,7 @@ def create_payment_blueprint(connect, csrf_protect=None):
         with connect() as con:
             con.execute("BEGIN IMMEDIATE")
             booking = con.execute(
-                """SELECT b.*, s.title AS service_title, s.price,
+                """SELECT b.*, s.title AS service_title, b.agreed_price AS price,
                           s.pricing_mode, s.booking_mode, u.email AS client_email
                    FROM marketplace_bookings b
                    JOIN services s ON s.id = b.service_id
