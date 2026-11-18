@@ -180,13 +180,6 @@ def create_payment_blueprint(connect, csrf_protect=None):
             except ValueError:
                 abort(400, description="The service price is not valid for checkout.")
 
-            pending_payment = con.execute(
-                """SELECT id FROM marketplace_payments
-                   WHERE booking_id = ? AND status = 'pending' LIMIT 1""",
-                (booking_id,),
-            ).fetchone()
-            if pending_payment:
-                abort(409, description="A payment attempt is already pending for this booking.")
             successful_payment = con.execute(
                 """SELECT id FROM marketplace_payments
                    WHERE booking_id = ? AND status = 'success' LIMIT 1""",
