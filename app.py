@@ -1139,14 +1139,22 @@ def legal_documents():
 
 
 
-def is_onecre8_moderator(user_id):
-    """Moderator access is restricted to server-configured account IDs."""
+def is_onecre8_moderator(user_id, email=""):
+    """Allow only explicitly configured moderator IDs or verified account emails."""
     configured_ids = {
         value.strip()
         for value in os.environ.get("ONECRE8_MODERATOR_USER_IDS", "").split(",")
         if value.strip().isdigit()
     }
-    return str(user_id) in configured_ids
+    configured_emails = {
+        value.strip().casefold()
+        for value in os.environ.get("ONECRE8_MODERATOR_EMAILS", "").split(",")
+        if value.strip()
+    }
+    normalized_email = (email or "").strip().casefold()
+    return str(user_id) in configured_ids or (
+        bool(normalized_email) and normalized_email in configured_emails
+    )
 
 
 def messaging_restriction_for(user_id, con=None):
@@ -1166,7 +1174,7 @@ def messaging_restriction_for(user_id, con=None):
 def moderator_required():
     if not current_user.is_authenticated:
         return redirect(url_for("login"))
-    if not is_onecre8_moderator(current_user.id):
+    if not is_onecre8_moderator(current_user.id, current_user.email):
         abort(404)
 
 
