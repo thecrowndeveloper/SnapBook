@@ -94,6 +94,9 @@ class MarketplaceMessagingTests(unittest.TestCase):
             "My Instagram: @creative_person",
             "Message me on WhatsApp",
             "Please pay outside the platform to my bank account",
+            "Email me at person@\u200bexample.com",
+            "Call me on 080\u200b12345678",
+            "My email is person@example\u00ad.com",
         ]
         for message in blocked:
             with self.subTest(message=message):
