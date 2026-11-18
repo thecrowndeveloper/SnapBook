@@ -606,6 +606,7 @@ def init_db():
                     ON DELETE CASCADE
             )
         """)
+        con.execute("INSERT OR IGNORE INTO marketplace_conversations (booking_id) SELECT id FROM marketplace_bookings")
         con.execute("""
             CREATE TABLE IF NOT EXISTS marketplace_messages (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -796,11 +797,11 @@ def init_db():
 
 
 # Messaging policy: block personal contact exchange before a message is stored.
-_EMAIL_PATTERN = re.compile(r"(?i)\\b[\\w.!#$%&'*+/=?^\`{|}~-]+\\s*(?:@|\\[at\\]|\\(at\\))\\s*[\\w-]+\\s*(?:\\.|\\[dot\\]|\\(dot\\))\\s*[a-z]{2,}\\b")
-_URL_PATTERN = re.compile(r"(?i)\\b(?:https?://|www\\.)\\S+")
-_SOCIAL_PATTERN = re.compile(r"(?i)(?:\\b(?:instagram|facebook|tiktok|telegram|snapchat|x|twitter)\\s*[:@/]\\s*[a-z0-9_.-]{2,}|(?<![\\w@])@[a-z0-9_.]{2,})")
+_EMAIL_PATTERN = re.compile(r"(?i)\b[\w.!#$%&'*+/=?^\`{|}~-]+\s*(?:@|\[at\]|\(at\))\s*[\w-]+\s*(?:\.|\[dot\]|\(dot\))\s*[a-z]{2,}\b")
+_URL_PATTERN = re.compile(r"(?i)\b(?:https?://|www\.)\S+")
+_SOCIAL_PATTERN = re.compile(r"(?i)(?:\b(?:instagram|facebook|tiktok|telegram|snapchat|x|twitter)\s*[:@/]\s*[a-z0-9_.-]{2,}|(?<![\w@])@[a-z0-9_.]{2,})")
 _PAYMENT_BYPASS_PATTERN = re.compile(
-    r"(?i)\\b(?:pay|send|transfer|wire)\\s+(?:me|to\s+my|outside|directly|via)\\b.{0,45}\\b(?:bank|account|opay|palmpay|moniepoint|whatsapp|cash|transfer)\\b"
+    r"(?i)\b(?:pay|send|transfer|wire)\s+(?:me|to\s+my|outside|directly|via)\b.{0,45}\b(?:bank|account|opay|palmpay|moniepoint|whatsapp|cash|transfer)\b"
 )
 
 def detect_message_contact_violation(message):
@@ -808,7 +809,7 @@ def detect_message_contact_violation(message):
     normalized = unicodedata.normalize("NFKC", message or "")
     lowered = normalized.casefold()
     if _EMAIL_PATTERN.search(lowered) or re.search(
-        r"(?i)\\b[\\w.-]+\\s*(?:at|\(at\))\\s*[\\w.-]+\\s*(?:dot|\(dot\))\\s*[a-z]{2,}\\b",
+        r"(?i)\b[\w.-]+\s*(?:at|\(at\))\s*[\w.-]+\s*(?:dot|\(dot\))\s*[a-z]{2,}\b",
         lowered,
     ):
         return "email"
@@ -816,20 +817,20 @@ def detect_message_contact_violation(message):
         return "external_link"
     if _SOCIAL_PATTERN.search(normalized):
         return "social_handle"
-    if re.search(r"(?i)\\b(?:whatsapp|wa\\.me|telegram|signal)\\b", lowered):
+    if re.search(r"(?i)\b(?:whatsapp|wa\.me|telegram|signal)\b", lowered):
         return "external_messaging"
     if _PAYMENT_BYPASS_PATTERN.search(lowered) or re.search(
-        r"(?i)\\b(?:pay outside|off[- ]platform payment|send payment to my|my bank details|account number is)\\b",
+        r"(?i)\b(?:pay outside|off[- ]platform payment|send payment to my|my bank details|account number is)\b",
         lowered,
     ):
         return "off_platform_payment"
     # Phone-like digit groups; ignore common date formats and currency/measurement values.
-    for match in re.finditer(r"(?<!\\w)(?:\\+?\\d[\\d().\\s-]{5,}\\d)(?!\\w)", normalized):
+    for match in re.finditer(r"(?<!\w)(?:\+?\d[\d().\s-]{5,}\d)(?!\w)", normalized):
         candidate = match.group(0)
-        digits = re.sub(r"\\D", "", candidate)
+        digits = re.sub(r"\D", "", candidate)
         before = normalized[max(0, match.start() - 3):match.start()]
-        if 7 <= len(digits) <= 15 and not re.search(r"[₦$€£]\\s*$", before):
-            if not re.fullmatch(r"\\d{4}[-/]\\d{1,2}[-/]\\d{1,2}", candidate.strip()):
+        if 7 <= len(digits) <= 15 and not re.search(r"[₦$€£]\s*$", before):
+            if not re.fullmatch(r"\d{4}[-/]\d{1,2}[-/]\d{1,2}", candidate.strip()):
                 return "phone_number"
     return None
 
