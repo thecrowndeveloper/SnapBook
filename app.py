@@ -481,6 +481,7 @@ def init_db():
                 client_user_id INTEGER NOT NULL,
                 requested_date TEXT NOT NULL,
                 client_message TEXT DEFAULT '',
+                agreed_price REAL,
                 status TEXT NOT NULL DEFAULT 'Requested'
                     CHECK(status IN (
                         'Requested', 'Accepted', 'In Progress',
@@ -493,6 +494,21 @@ def init_db():
                 FOREIGN KEY(provider_id) REFERENCES providers(id),
                 FOREIGN KEY(client_user_id) REFERENCES users(id)
             )
+        """)
+
+        add_column_if_missing(con, "marketplace_bookings", "agreed_price", "REAL")
+        con.execute("""
+            UPDATE marketplace_bookings
+            SET agreed_price = (
+                SELECT services.price FROM services
+                WHERE services.id = marketplace_bookings.service_id
+            )
+            WHERE agreed_price IS NULL
+              AND EXISTS (
+                  SELECT 1 FROM services
+                  WHERE services.id = marketplace_bookings.service_id
+                    AND services.pricing_mode = 'fixed'
+              )
         """)
 
         con.execute("""
@@ -1757,7 +1773,7 @@ def my_bookings():
                 providers.display_name AS professional_name,
                 providers.business_name,
                 services.title AS service_title,
-                services.price AS service_price,
+                COALESCE(marketplace_bookings.agreed_price, services.price) AS service_price,
                 services.pricing_mode,
                 services.booking_mode,
                 marketplace_reviews.id AS review_id,
@@ -2018,6 +2034,7 @@ def request_service(service_id):
         con.execute("BEGIN IMMEDIATE")
         service = con.execute("""
             SELECT services.id, services.provider_id, services.booking_mode,
+                   services.pricing_mode, services.price,
                    providers.user_id, services.title
             FROM services
             JOIN providers ON providers.id = services.provider_id
@@ -2051,12 +2068,13 @@ def request_service(service_id):
         booking = con.execute("""
             INSERT INTO marketplace_bookings (
                 service_id, provider_id, client_user_id,
-                requested_date, client_message
+                requested_date, client_message, agreed_price
             )
-            VALUES (?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?)
         """, (
             service_id, service["provider_id"], current_user.id,
-            requested_date, client_message
+            requested_date, client_message,
+            service["price"] if service["pricing_mode"] == "fixed" else None
         ))
 
         if service["user_id"]:
