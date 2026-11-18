@@ -499,6 +499,28 @@ def init_db():
             CREATE INDEX IF NOT EXISTS idx_marketplace_bookings_client
             ON marketplace_bookings(client_user_id)
         """)
+
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS marketplace_payments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                booking_id INTEGER NOT NULL,
+                client_user_id INTEGER NOT NULL,
+                reference TEXT NOT NULL UNIQUE,
+                amount_kobo INTEGER NOT NULL CHECK(amount_kobo > 0),
+                currency TEXT NOT NULL CHECK(currency = 'NGN'),
+                status TEXT NOT NULL CHECK(status IN ('pending', 'success', 'failed')),
+                paystack_transaction_id TEXT UNIQUE,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                paid_at TEXT,
+                FOREIGN KEY(booking_id) REFERENCES marketplace_bookings(id),
+                FOREIGN KEY(client_user_id) REFERENCES users(id)
+            )
+        """)
+        con.execute("""
+            CREATE INDEX IF NOT EXISTS idx_marketplace_payments_booking
+            ON marketplace_payments(booking_id, created_at DESC)
+        """)
+
         con.execute("""
             CREATE INDEX IF NOT EXISTS idx_marketplace_bookings_provider
             ON marketplace_bookings(provider_id)
@@ -2489,6 +2511,9 @@ def booking_status(booking_id):
 
 # Create tables and safely add missing columns when the app starts.
 init_db()
+
+from paystack_payments import create_payment_blueprint
+app.register_blueprint(create_payment_blueprint(connect))
 
 
 if __name__ == "__main__":
