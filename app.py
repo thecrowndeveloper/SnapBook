@@ -2537,9 +2537,6 @@ def submit_messaging_restriction_appeal(restriction_id):
     if current_user.role not in ("client", "provider"):
         abort(403)
     appeal_text = request.form.get("appeal_text", "").strip()
-    if not 20 <= len(appeal_text) <= 1000:
-        flash("Please explain your request in 20 to 1,000 characters.", "error")
-        return redirect(request.referrer or url_for("message_inbox"))
     with connect() as con:
         con.execute("BEGIN IMMEDIATE")
         restriction = con.execute("""
@@ -2551,6 +2548,9 @@ def submit_messaging_restriction_appeal(restriction_id):
         """, (restriction_id, current_user.id)).fetchone()
         if not restriction:
             abort(404)
+        if not 20 <= len(appeal_text) <= 1000:
+            flash("Please explain your request in 20 to 1,000 characters.", "error")
+            return redirect(url_for("booking_messages", booking_id=restriction["booking_id"]))
         try:
             con.execute("""
                 INSERT INTO marketplace_messaging_appeals
