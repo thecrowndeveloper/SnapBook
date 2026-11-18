@@ -2,12 +2,15 @@
 import os
 import tempfile
 import unittest
+from io import BytesIO
+
+from PIL import Image
 
 _STORAGE = tempfile.TemporaryDirectory(prefix="onecre8-messages-")
 os.environ["RAILWAY_VOLUME_MOUNT_PATH"] = _STORAGE.name
 os.environ["SECRET_KEY"] = "onecre8-message-tests-only"
 
-from app import app, connect, detect_message_contact_violation  # noqa: E402
+from app import app, connect, detect_message_contact_violation, MESSAGE_ATTACHMENT_FOLDER  # noqa: E402
 
 
 class MarketplaceMessagingTests(unittest.TestCase):
@@ -129,6 +132,61 @@ class MarketplaceMessagingTests(unittest.TestCase):
             ).fetchone()[0]
         self.assertEqual(count, 0)
         self.assertEqual(events, 1)
+
+
+    def make_png(self):
+        image = Image.new("RGB", (32, 24), "white")
+        stream = BytesIO()
+        image.save(stream, format="PNG")
+        stream.seek(0)
+        return stream
+
+    def test_valid_image_is_reencoded_and_only_participants_can_download(self):
+        client = self.logged_in(self.client_id)
+        response = client.post(
+            f"/messages/{self.booking_id}",
+            data={
+                "body": "Here is the reference image for the project.",
+                "attachment": (self.make_png(), "reference.png"),
+            },
+            content_type="multipart/form-data",
+            follow_redirects=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        with connect() as con:
+            attachment = con.execute(
+                "SELECT id, filename, file_size FROM marketplace_message_attachments"
+            ).fetchone()
+        self.assertTrue(attachment["filename"].endswith(".webp"))
+        self.assertGreater(attachment["file_size"], 0)
+        self.assertTrue((MESSAGE_ATTACHMENT_FOLDER / attachment["filename"]).is_file())
+        self.assertEqual(
+            client.get(f"/messages/attachments/{attachment['id']}").status_code, 200
+        )
+        outsider = self.logged_in(self.outsider_id)
+        self.assertEqual(
+            outsider.get(f"/messages/attachments/{attachment['id']}").status_code,
+            404,
+        )
+
+    def test_invalid_file_type_is_rejected_without_storing_attachment(self):
+        client = self.logged_in(self.client_id)
+        response = client.post(
+            f"/messages/{self.booking_id}",
+            data={
+                "body": "Please see this file.",
+                "attachment": (BytesIO(b"not an image"), "malware.svg"),
+            },
+            content_type="multipart/form-data",
+            follow_redirects=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Only JPG, PNG or WEBP", response.data)
+        with connect() as con:
+            count = con.execute(
+                "SELECT COUNT(*) FROM marketplace_message_attachments"
+            ).fetchone()[0]
+        self.assertEqual(count, 0)
 
     def test_valid_message_is_stored_and_notifies_other_participant(self):
         client = self.logged_in(self.client_id)
