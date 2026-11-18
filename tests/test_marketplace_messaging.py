@@ -413,5 +413,16 @@ class MarketplaceMessagingTests(unittest.TestCase):
         self.assertEqual(notice, previous_notices + 1)
 
 
+    def test_active_restriction_hides_message_composer(self):
+        self.make_restriction()
+        provider = self.logged_in(self.provider_user_id)
+        response = provider.get(f"/messages/{self.booking_id}")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Messaging temporarily restricted", response.data)
+        self.assertIn(b"Sending messages is temporarily unavailable", response.data)
+        self.assertNotIn(b'name="message-body"', response.data)
+        self.assertNotIn(b'name="message-attachment"', response.data)
+
+
 if __name__ == "__main__":
     unittest.main()

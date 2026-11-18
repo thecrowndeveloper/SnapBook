@@ -52,6 +52,7 @@
         <p class="muted">No messages yet. Start by describing the project, timeline or requirements.</p>
       {% endfor %}
     </div>
+    {% if not active_restriction %}
     <form method="POST" enctype="multipart/form-data" class="booking-form message-compose">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <label for="message-body">Your message</label>
@@ -62,6 +63,7 @@
       <p id="message-policy" class="muted">Up to 2,000 characters. Phone numbers, email addresses, social handles, external links and off-platform payment requests are blocked. Project details, prices, dates and measurements are welcome.</p>
       <button class="btn btn-primary" type="submit">Send message</button>
     </form>
+    {% endif %}
   </div>
 </section>
 {% endblock %}

@@ -5,7 +5,7 @@
   <div class="workspace-hero">
     <div><p class="eyebrow">YOUR CREATIVE BUSINESS</p><h1>Welcome, {{ provider.display_name }}</h1>
       <p class="muted">Manage your profile, services, portfolio and client requests in one place.</p></div>
-    <a class="btn dark" href="{{ url_for('public_provider', provider_id=provider.id) }}" target="_blank" rel="noopener">Preview public page ↗</a>
+    <div class="workspace-hero-actions"><a class="btn btn-primary" href="{{ url_for('message_inbox') }}">Open messages</a><a class="btn dark" href="{{ url_for('public_provider', provider_id=provider.id) }}" target="_blank" rel="noopener">Preview public page ↗</a></div>
   </div>
   <div class="workspace-stat">
     <span><strong>{{ services|length }}</strong> services</span>
