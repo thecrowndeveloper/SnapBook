@@ -2543,9 +2543,11 @@ def submit_messaging_restriction_appeal(restriction_id):
     with connect() as con:
         con.execute("BEGIN IMMEDIATE")
         restriction = con.execute("""
-            SELECT id FROM marketplace_messaging_restrictions
-            WHERE id = ? AND user_id = ? AND active = 1
-              AND ends_at > CURRENT_TIMESTAMP
+            SELECT r.id, mr.booking_id
+            FROM marketplace_messaging_restrictions r
+            JOIN marketplace_message_reports mr ON mr.id = r.report_id
+            WHERE r.id = ? AND r.user_id = ? AND r.active = 1
+              AND r.ends_at > CURRENT_TIMESTAMP
         """, (restriction_id, current_user.id)).fetchone()
         if not restriction:
             abort(404)
@@ -2559,7 +2561,7 @@ def submit_messaging_restriction_appeal(restriction_id):
             flash("A review request has already been submitted for this restriction.", "info")
         else:
             flash("Your review request has been submitted. You can continue reading conversations while it is reviewed.", "success")
-    return redirect(request.referrer or url_for("message_inbox"))
+    return redirect(url_for("booking_messages", booking_id=restriction["booking_id"]))
 
 
 @app.route("/moderation/appeals")
