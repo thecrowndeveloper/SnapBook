@@ -719,6 +719,28 @@ def init_db():
             CREATE INDEX IF NOT EXISTS idx_messaging_restrictions_user
             ON marketplace_messaging_restrictions(user_id, active, ends_at)
         """)
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS marketplace_messaging_appeals (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                restriction_id INTEGER NOT NULL UNIQUE,
+                user_id INTEGER NOT NULL,
+                appeal_text TEXT NOT NULL CHECK(length(appeal_text) BETWEEN 20 AND 1000),
+                status TEXT NOT NULL DEFAULT 'open'
+                    CHECK(status IN ('open', 'in_review', 'upheld', 'lifted')),
+                moderator_note TEXT NOT NULL DEFAULT '' CHECK(length(moderator_note) <= 1000),
+                reviewed_by INTEGER,
+                reviewed_at TEXT,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(restriction_id) REFERENCES marketplace_messaging_restrictions(id)
+                    ON DELETE CASCADE,
+                FOREIGN KEY(user_id) REFERENCES users(id),
+                FOREIGN KEY(reviewed_by) REFERENCES users(id)
+            )
+        """)
+        con.execute("""
+            CREATE INDEX IF NOT EXISTS idx_messaging_appeals_status
+            ON marketplace_messaging_appeals(status, created_at DESC)
+        """)
 
         # Notifications for photographers and marketplace providers
         con.execute("""
@@ -2489,14 +2511,123 @@ def booking_messages(booking_id):
             ORDER BY m.id DESC LIMIT 100
         """, (conversation_id,)).fetchall()
         message_draft = session.pop(f"message_draft_{booking_id}", "")
+        active_restriction = messaging_restriction_for(current_user.id, con)
+        restriction_appeal = None
+        if active_restriction:
+            restriction_appeal = con.execute("""
+                SELECT id, status, created_at, moderator_note
+                FROM marketplace_messaging_appeals
+                WHERE restriction_id = ? AND user_id = ?
+            """, (active_restriction["id"], current_user.id)).fetchone()
     return render_template(
         "booking_messages.html",
         booking=booking,
         messages=list(reversed(messages)),
         other_party=(booking["provider_name"] if current_user.id == booking["client_user_id"] else booking["client_name"]),
         message_draft=message_draft,
+        active_restriction=active_restriction,
+        restriction_appeal=restriction_appeal,
     )
 
+
+
+@app.route("/messages/restrictions/<int:restriction_id>/appeal", methods=["POST"])
+@login_required
+def submit_messaging_restriction_appeal(restriction_id):
+    if current_user.role not in ("client", "provider"):
+        abort(403)
+    appeal_text = request.form.get("appeal_text", "").strip()
+    if not 20 <= len(appeal_text) <= 1000:
+        flash("Please explain your request in 20 to 1,000 characters.", "error")
+        return redirect(request.referrer or url_for("message_inbox"))
+    with connect() as con:
+        con.execute("BEGIN IMMEDIATE")
+        restriction = con.execute("""
+            SELECT id FROM marketplace_messaging_restrictions
+            WHERE id = ? AND user_id = ? AND active = 1
+              AND ends_at > CURRENT_TIMESTAMP
+        """, (restriction_id, current_user.id)).fetchone()
+        if not restriction:
+            abort(404)
+        try:
+            con.execute("""
+                INSERT INTO marketplace_messaging_appeals
+                    (restriction_id, user_id, appeal_text)
+                VALUES (?, ?, ?)
+            """, (restriction_id, current_user.id, appeal_text))
+        except sqlite3.IntegrityError:
+            flash("A review request has already been submitted for this restriction.", "info")
+        else:
+            flash("Your review request has been submitted. You can continue reading conversations while it is reviewed.", "success")
+    return redirect(request.referrer or url_for("message_inbox"))
+
+
+@app.route("/moderation/appeals")
+@login_required
+def moderation_messaging_appeals():
+    moderator_required()
+    with connect() as con:
+        appeals = con.execute("""
+            SELECT a.id, a.restriction_id, a.user_id, a.appeal_text, a.status,
+                   a.moderator_note, a.created_at, a.reviewed_at,
+                   u.name AS user_name, r.reason, r.starts_at, r.ends_at,
+                   r.active, r.report_id, s.title AS service_title
+            FROM marketplace_messaging_appeals a
+            JOIN users u ON u.id = a.user_id
+            JOIN marketplace_messaging_restrictions r ON r.id = a.restriction_id
+            JOIN marketplace_message_reports mr ON mr.id = r.report_id
+            JOIN marketplace_bookings b ON b.id = mr.booking_id
+            JOIN services s ON s.id = b.service_id
+            ORDER BY CASE a.status WHEN 'open' THEN 0 WHEN 'in_review' THEN 1 ELSE 2 END,
+                     a.created_at DESC
+            LIMIT 200
+        """).fetchall()
+    return render_template("moderation_appeals.html", appeals=appeals)
+
+
+@app.route("/moderation/appeals/<int:appeal_id>", methods=["POST"])
+@login_required
+def review_messaging_restriction_appeal(appeal_id):
+    moderator_required()
+    action = request.form.get("action", "").strip()
+    note = request.form.get("note", "").strip()
+    if action not in {"in_review", "uphold", "lift"} or len(note) > 1000:
+        abort(400)
+    with connect() as con:
+        con.execute("BEGIN IMMEDIATE")
+        appeal = con.execute("""
+            SELECT id, restriction_id, status
+            FROM marketplace_messaging_appeals
+            WHERE id = ?
+        """, (appeal_id,)).fetchone()
+        if not appeal:
+            abort(404)
+        if appeal["status"] in ("upheld", "lifted"):
+            flash("This appeal has already been decided.", "info")
+            return redirect(url_for("moderation_messaging_appeals"))
+        if action == "in_review":
+            con.execute("""
+                UPDATE marketplace_messaging_appeals
+                SET status='in_review', moderator_note=?, reviewed_by=?,
+                    reviewed_at=CURRENT_TIMESTAMP
+                WHERE id=?
+            """, (note, current_user.id, appeal_id))
+        else:
+            new_status = "upheld" if action == "uphold" else "lifted"
+            con.execute("""
+                UPDATE marketplace_messaging_appeals
+                SET status=?, moderator_note=?, reviewed_by=?,
+                    reviewed_at=CURRENT_TIMESTAMP
+                WHERE id=?
+            """, (new_status, note, current_user.id, appeal_id))
+            if action == "lift":
+                con.execute("""
+                    UPDATE marketplace_messaging_restrictions
+                    SET active=0
+                    WHERE id=?
+                """, (appeal["restriction_id"],))
+    flash("Appeal decision saved.", "success")
+    return redirect(url_for("moderation_messaging_appeals"))
 
 
 @app.route("/messages/<int:booking_id>/report/<int:message_id>", methods=["POST"])
@@ -2615,7 +2746,7 @@ def review_marketplace_message_report(report_id):
                 INSERT INTO notifications
                     (user_id, title, message, notification_type, related_id)
                 VALUES (?, 'OneCre8 messaging restriction',
-                        'Your messaging access is temporarily restricted following a policy review. You can still read existing conversations. Contact OneCre8 support to request a review.',
+                        'Your messaging access is temporarily restricted following a policy review. You can still read existing conversations. Open a conversation to request a review.',
                         'messaging_restriction', ?)
             """, (report["reported_user_id"], report_id))
     flash("Moderation decision saved.", "success")
