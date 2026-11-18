@@ -850,6 +850,9 @@ def save_private_message_image(uploaded_file):
         raise ValueError("The selected image is empty.")
     if size > MAX_MESSAGE_IMAGE_BYTES:
         raise ValueError("Message images must not exceed 5 MB.")
+    extension = Path(uploaded_file.filename or "").suffix.lower()
+    if extension not in {".jpg", ".jpeg", ".png", ".webp"}:
+        raise ValueError("Only JPG, PNG or WEBP images are accepted in messages.")
     filename = f"{uuid4().hex}.webp"
     destination = MESSAGE_ATTACHMENT_FOLDER / filename
     try:
