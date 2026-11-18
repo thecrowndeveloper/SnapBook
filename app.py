@@ -2472,13 +2472,15 @@ def request_service(service_id):
             flash("Please select your preferred service date.", "error")
             return redirect(request.referrer or url_for("service_detail", service_id=service_id))
 
+        request_type = "booking" if service["booking_mode"] == "booking" else "enquiry"
         existing = con.execute("""
             SELECT id
             FROM marketplace_bookings
             WHERE service_id = ?
               AND client_user_id = ?
+              AND request_type = ?
               AND status NOT IN ('Cancelled', 'Completed')
-        """, (service_id, current_user.id)).fetchone()
+        """, (service_id, current_user.id, request_type)).fetchone()
 
         if existing:
             flash("You already have an active request for this service.", "info")
