@@ -92,7 +92,7 @@ class PaystackSandboxTests(unittest.TestCase):
             "amount": amount,
             "currency": "NGN",
             "domain": domain,
-            "id": 123456789,
+            "id": 123456789 + sum(reference.encode("utf-8")),
             "metadata": {"booking_id": self.booking_id},
         }
 
@@ -116,8 +116,9 @@ class PaystackSandboxTests(unittest.TestCase):
         ).hexdigest()
         headers = {"Paystack-Signature": f"t={timestamp},v1=whk_demo:{signature}"}
         with patch("paystack_payments.time.time", return_value=1760270400):
-            self.assertTrue(_valid_webhook_signature(raw, headers, "sk_test_demo"))
-            self.assertFalse(_valid_webhook_signature(raw + b" ", headers, "sk_test_demo"))
+            with patch.dict(os.environ, {"PAYSTACK_WEBHOOK_SECRET": secret}):
+                self.assertTrue(_valid_webhook_signature(raw, headers, "sk_test_demo"))
+                self.assertFalse(_valid_webhook_signature(raw + b" ", headers, "sk_test_demo"))
 
     def test_non_client_cannot_start_checkout(self):
         provider_client = app.test_client()
