@@ -3478,3 +3478,18 @@ textarea {
 .message-own { justify-self: end; background: #f3ead9; border-color: #c6a66c; }
 .message-compose textarea { width: 100%; }
 @media (max-width: 600px) { .message-item { max-width: 100%; } }
+
+
+/* Improve contrast for the public creative-professional identity. */
+.public-profile-intro h1 { color: #ffffff; text-shadow: 0 1px 3px rgba(0, 0, 0, .35); }
+.public-profile-intro .eyebrow { color: #f7ead5; }
+.public-profile-owner, .public-profile-location { color: #f3eee5; }
+
+/* Make messaging a clear, consistent destination for signed-in users. */
+.primary-navigation .nav-messages-link { display: inline-flex; align-items: center; justify-content: center; padding: 10px 16px; border: 1px solid var(--gold); border-radius: 3px; color: var(--ink); font-weight: 700; }
+.primary-navigation .nav-messages-link:hover, .primary-navigation .nav-messages-link:focus-visible { background: var(--gold); color: #171715; }
+.workspace-hero-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+@media (max-width: 760px) {
+  .workspace-hero-actions { width: 100%; }
+  .workspace-hero-actions .btn { flex: 1 1 100%; text-align: center; }
+}
