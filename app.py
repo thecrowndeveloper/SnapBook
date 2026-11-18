@@ -930,6 +930,9 @@ def save_private_message_image(uploaded_file):
 def detect_message_contact_violation(message):
     """Return a policy category when a message attempts to share contact/payment details."""
     normalized = unicodedata.normalize("NFKC", message or "")
+    # Strip invisible formatting characters that can be inserted between
+    # letters or digits to disguise contact details. Keep ordinary whitespace.
+    normalized = re.sub(r"[\u00ad\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]", "", normalized)
     lowered = normalized.casefold()
     if _EMAIL_PATTERN.search(lowered) or re.search(
         r"(?i)\b[\w.-]+\s*(?:at|\(at\))\s*[\w.-]+\s*(?:dot|\(dot\))\s*[a-z]{2,}\b",
