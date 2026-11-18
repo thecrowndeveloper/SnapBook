@@ -664,10 +664,17 @@ h2 {
 }
 
 .closing h2 {
-  font-size: clamp(40px, 5vw, 62px);
-  letter-spacing: -2.5px;
-  line-height: 1.08;
-  margin-bottom: 12px;
+  color: #fff;
+  font-size: clamp(44px, 6vw, 76px);
+  font-weight: 900;
+  letter-spacing: -2px;
+  line-height: 1.06;
+  margin-bottom: 16px;
+}
+
+.closing h2 em {
+  color: #f0c77f;
+  font-weight: 900;
 }
 
 .closing .btn {
