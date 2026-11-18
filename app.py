@@ -497,19 +497,6 @@ def init_db():
         """)
 
         add_column_if_missing(con, "marketplace_bookings", "agreed_price", "REAL")
-        con.execute("""
-            UPDATE marketplace_bookings
-            SET agreed_price = (
-                SELECT services.price FROM services
-                WHERE services.id = marketplace_bookings.service_id
-            )
-            WHERE agreed_price IS NULL
-              AND EXISTS (
-                  SELECT 1 FROM services
-                  WHERE services.id = marketplace_bookings.service_id
-                    AND services.pricing_mode = 'fixed'
-              )
-        """)
 
         con.execute("""
             CREATE INDEX IF NOT EXISTS idx_marketplace_bookings_client
@@ -1773,7 +1760,7 @@ def my_bookings():
                 providers.display_name AS professional_name,
                 providers.business_name,
                 services.title AS service_title,
-                COALESCE(marketplace_bookings.agreed_price, services.price) AS service_price,
+                marketplace_bookings.agreed_price AS service_price,
                 services.pricing_mode,
                 services.booking_mode,
                 marketplace_reviews.id AS review_id,
