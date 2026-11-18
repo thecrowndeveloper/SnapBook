@@ -1,60 +1,48 @@
-# OneCre8 Media SQLite backups and recovery
+# OneCre8 Media backups and recovery
 
-## Current production database
+## Current production storage
 
-The Flask application uses SQLite at `/data/snapbook.db` when the Railway
-volume is mounted at `/data`. Keep a single application replica while this
-SQLite database remains the production store.
+The production Railway volume is mounted at `/data` (500 MB, SFO). It holds:
+- `/data/snapbook.db` — SQLite marketplace data;
+- `/data/portfolio/` — creative professional portfolio uploads;
+- `/data/message-attachments/` — private booking-message images.
 
-A Railway persistent volume is not an independent backup. It does not by
-itself protect against accidental deletion, volume failure, corruption, or
-loss of the project.
+The app currently runs one production replica. Keep one replica while SQLite is the production database. A Railway volume is persistent storage, not an independent backup: it does not protect against accidental deletion, volume loss, corruption, or project loss.
 
-## Create a consistent backup
+## Full-volume backup (recommended)
 
-Use the SQLite online backup API rather than copying the live database file
-with a normal file-copy command. This matters because the database uses WAL
-mode and recent committed changes may still be in the WAL file.
+The new `scripts/backup_volume.py` utility creates a ZIP archive containing the database and both media directories. It uses SQLite's online backup API, checks database integrity, tests the ZIP archive, refuses to overwrite an existing archive, and refuses a destination inside the source volume.
 
-Run:
+**Pause application writes before starting this full-volume archive.** The database copy is transactionally consistent, but the portfolio and message files are copied individually; pausing writes prevents a file being added, removed, or changed during the archive. Do not run this by copying files directly from a live volume without a maintenance window.
+
+On the Railway host, run:
 
 ```bash
-python scripts/backup_sqlite.py /data/snapbook.db /secure-offsite-location/snapbook-YYYYMMDD-HHMMSS.db
+python scripts/backup_volume.py /data /protected-external-storage/onecre8-YYYYMMDD-HHMMSS.zip
 ```
 
-The destination must be a new file. The script:
-- opens the source read-only;
-- creates a transactionally consistent SQLite backup;
-- runs `PRAGMA integrity_check` on the result;
-- removes an incomplete backup if an error occurs;
-- refuses to overwrite an existing backup.
+The destination path above is a placeholder. It must be on storage independent of the Railway volume. The script does not upload or encrypt the archive. After verification, encrypt it before transfer/storage, restrict access to named operators, and protect it in transit and at rest. The archive contains private user messages and portfolio images; treat it as confidential personal data. Never commit archives or credentials to Git.
 
-**Important:** the example destination is a placeholder. Do not save the only
-backup beside the live database on the same Railway volume. Copy verified
-backups to a separate protected storage service, restrict access, and encrypt
-them at rest and in transit. The script does not yet upload to cloud storage.
+The older `scripts/backup_sqlite.py` remains available for database-only snapshots. It does not include uploaded media.
 
 ## Restore procedure
 
-1. Put the application into maintenance mode or stop writes.
-2. Preserve the current database and its WAL/SHM files as an incident snapshot.
-3. Verify the backup with `sqlite3 BACKUP_FILE "PRAGMA integrity_check;"`.
-4. Restore the verified backup as `/data/snapbook.db` while the app is stopped.
-5. Confirm file ownership/permissions, restart one replica, and check login,
-   homepage, booking, listing, and portfolio flows.
-6. Keep the pre-restore copy until the restored service has been verified.
+1. Use a maintenance window and stop application writes.
+2. Preserve the current database, WAL/SHM files, and media directories as an incident snapshot.
+3. Decrypt the chosen archive into a separate temporary directory.
+4. Test the ZIP with `python -m zipfile -t BACKUP.zip` and run `PRAGMA integrity_check` against the extracted database.
+5. Restore the database and both media directories to the correct volume paths while the app is stopped. Preserve restrictive permissions on private message attachments.
+6. Restart one replica and verify login, homepage, booking, listing, portfolio display, and participant-only message attachment access.
+7. Keep the pre-restore snapshot until all checks pass.
 
-Never test restoration against the only production database. First restore to
-a separate test database and verify application reads and key workflows.
+Never test restoration over the only production copy. First restore to a separate test database or isolated environment. Do not expose private message attachments through public static paths.
 
-## Operational gaps before calling backups production-ready
+## What is still needed for production-grade disaster recovery
 
-- No off-site storage provider or credentials are currently configured.
-- No scheduled backup job or retention policy is active.
-- No alerting for missed or failed backups is configured.
-- A restore drill against a separate database has not yet been recorded.
+- No independent off-site storage provider is configured.
+- No scheduled backup, retention policy, or failure alert is active.
+- No automated encryption/key-management workflow is configured.
+- No restore drill has been recorded.
+- The 500 MB volume capacity must be monitored as uploaded media grows.
 
-Before automating, choose a separate private object-storage destination,
-retention period, encryption/access policy, and alert recipient. Then wire the
-job to those approved settings. Do not place storage credentials in source
-control or application logs.
+Before automating, choose a separate private storage provider, retention period, encryption/key-access policy, backup schedule, and alert recipient. Do not add paid infrastructure or credentials without approval. Do not claim the backup process is operational until a real archive has been stored independently and a restore drill has passed.
