@@ -24,6 +24,7 @@ from uuid import uuid4
 from mutagen.mp4 import MP4
 from PIL import Image, ImageOps
 import warnings
+from datetime import timedelta
 
 AUTHLIB_IMPORT_ERROR = None
 try:
@@ -34,6 +35,9 @@ except ImportError as exc:
 
 
 app = Flask(__name__)
+# Cache static assets for seven days. Versioned CSS/JS URLs below allow
+# browsers to fetch updated files immediately after a release.
+app.config["SEND_FILE_MAX_AGE_DEFAULT"] = timedelta(days=7)
 # Trust Railway's forwarded HTTPS scheme so OAuth callbacks use the public HTTPS URL.
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 app.secret_key = os.environ.get(
