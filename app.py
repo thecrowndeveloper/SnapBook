@@ -2128,7 +2128,7 @@ def profile_media(filename):
         ).fetchone()
     if not exists:
         abort(404)
-    return send_from_directory(app.config["PORTFOLIO_UPLOAD_FOLDER"], safe_filename)
+    return send_from_directory(app.config["PORTFOLIO_UPLOAD_FOLDER"], safe_filename, max_age=31536000)
 
 
 @app.route("/provider/<int:provider_id>")
