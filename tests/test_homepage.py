@@ -89,6 +89,25 @@ class HomepageRegressionTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('name="csrf_token"', response.get_data(as_text=True))
 
+    def test_production_startup_rejects_missing_secret_key(self):
+        import subprocess
+        import sys
+
+        env = os.environ.copy()
+        env.pop("SECRET_KEY", None)
+        env["RAILWAY_PROJECT_ID"] = "test-production-project"
+        env["RAILWAY_VOLUME_MOUNT_PATH"] = _TEST_STORAGE.name
+
+        result = subprocess.run(
+            [sys.executable, "-c", "import app"],
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("SECRET_KEY must be configured", result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()
