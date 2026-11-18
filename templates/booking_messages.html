@@ -4,6 +4,23 @@
 <section class="section dashboard">
   <div class="workspace-hero"><div><p class="eyebrow">PRIVATE BOOKING CONVERSATION</p><h1>{{ booking.service_title }}</h1><p class="muted">With {{ other_party }} · Booking #{{ booking.id }}</p></div><a class="btn dark" href="{{ url_for('message_inbox') }}">All messages</a></div>
   <div class="workspace-card workspace-card-wide" aria-label="Conversation with {{ other_party }}">
+    {% if active_restriction %}
+      <div class="message-item" role="status" aria-live="polite">
+        <p><strong>Messaging temporarily restricted</strong></p>
+        <p>You can continue reading this conversation until {{ active_restriction.ends_at }}. Sending messages is temporarily unavailable.</p>
+        {% if restriction_appeal %}
+          <p>Your review request: <strong>{{ restriction_appeal.status|replace('_', ' ')|title }}</strong>.</p>
+          {% if restriction_appeal.moderator_note %}<p>Moderator response: {{ restriction_appeal.moderator_note }}</p>{% endif %}
+        {% else %}
+          <form method="POST" action="{{ url_for('submit_messaging_restriction_appeal', restriction_id=active_restriction.id) }}" class="booking-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label for="restriction-appeal">Request a review (20–1,000 characters)</label>
+            <textarea id="restriction-appeal" name="appeal_text" rows="4" minlength="20" maxlength="1000" required></textarea>
+            <button class="btn btn-primary" type="submit">Submit review request</button>
+          </form>
+        {% endif %}
+      </div>
+    {% endif %}
     <div class="message-history" aria-live="polite">
       {% for message in messages %}
         <article class="message-item {% if message.sender_user_id == current_user.id %}message-own{% endif %}">
