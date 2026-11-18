@@ -7,6 +7,7 @@ import hashlib
 import hmac
 import os
 import re
+import sqlite3
 import time
 from decimal import Decimal, InvalidOperation
 from urllib.parse import quote
@@ -117,9 +118,12 @@ def create_payment_blueprint(connect, csrf_protect=None):
         return True
 
     def record_verified_success(payment, verified):
+        transaction_id = verified.get("id")
         if (
             verified.get("status") != "success"
             or not verified_payment_matches(payment, verified)
+            or not isinstance(transaction_id, int)
+            or transaction_id <= 0
         ):
             return False
 
@@ -141,13 +145,19 @@ def create_payment_blueprint(connect, csrf_protect=None):
                 return True
             if current["status"] != "pending":
                 return False
-            con.execute(
-                """UPDATE marketplace_payments
-                   SET status = 'success', paystack_transaction_id = ?,
-                       paid_at = CURRENT_TIMESTAMP
-                   WHERE id = ? AND status = 'pending'""",
-                (str(verified.get("id", "")), payment["id"]),
-            )
+            try:
+                con.execute(
+                    """UPDATE marketplace_payments
+                       SET status = 'success', paystack_transaction_id = ?,
+                           paid_at = CURRENT_TIMESTAMP
+                       WHERE id = ? AND status = 'pending'""",
+                    (str(transaction_id), payment["id"]),
+                )
+            except sqlite3.IntegrityError:
+                current_app.logger.exception(
+                    "Paystack transaction ID is already linked to another payment."
+                )
+                return False
             return True
 
     @payments.post("/marketplace-booking/<int:booking_id>/pay")
