@@ -99,7 +99,7 @@ class BookingAuthorizationRegressionTests(unittest.TestCase):
     def setUpClass(cls):
         from app import connect
 
-        cls.connect = connect
+        cls.connect = staticmethod(connect)
         with connect() as con:
             con.execute(
                 "INSERT INTO users (name, email, password_hash, role, created_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)",
