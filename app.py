@@ -59,6 +59,25 @@ app.config.update(
 
 csrf = CSRFProtect(app)
 
+@app.after_request
+def add_security_headers(response):
+    """Apply safe browser security defaults to every application response."""
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault(
+        "Referrer-Policy", "strict-origin-when-cross-origin"
+    )
+    response.headers.setdefault(
+        "Permissions-Policy",
+        "camera=(), microphone=(), geolocation=()"
+    )
+    if request.is_secure:
+        response.headers.setdefault(
+            "Strict-Transport-Security", "max-age=31536000"
+        )
+    return response
+
+
 oauth = OAuth(app) if OAuth else None
 google_oauth = None
 if oauth and os.environ.get("GOOGLE_CLIENT_ID") and os.environ.get("GOOGLE_CLIENT_SECRET"):
