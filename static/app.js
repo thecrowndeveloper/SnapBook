@@ -19,10 +19,6 @@ document.addEventListener("DOMContentLoaded", () => {
       primaryNav.classList.toggle("is-open", !isOpen);
     });
 
-    primaryNav.addEventListener("click", (event) => {
-      if (event.target.closest("a")) closeMenu();
-    });
-
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape" &&
           menuButton.getAttribute("aria-expanded") === "true") {
