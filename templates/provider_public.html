@@ -73,7 +73,7 @@
           <article class="public-portfolio-card">
             <div class="public-portfolio-media">
               {% if item.media_type == 'image' %}
-                <img src="{{ url_for('portfolio_media', filename=item.filename) }}" alt="{{ item.title }}" loading="lazy">
+                <img src="{{ url_for('portfolio_media', filename=item.filename) }}" alt="{{ item.title }}" loading="lazy" decoding="async">
               {% else %}
                 <video controls preload="metadata">
                   <source src="{{ url_for('portfolio_media', filename=item.filename) }}" type="video/mp4">
