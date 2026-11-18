@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Conversation · {{ booking.service_title }}{% endblock %}
+{% block content %}
+<section class="section dashboard">
+  <div class="workspace-hero"><div><p class="eyebrow">PRIVATE BOOKING CONVERSATION</p><h1>{{ booking.service_title }}</h1><p class="muted">With {{ other_party }} · Booking #{{ booking.id }}</p></div><a class="btn dark" href="{{ url_for('message_inbox') }}">All messages</a></div>
+  <div class="workspace-card workspace-card-wide" aria-label="Conversation with {{ other_party }}">
+    <div class="message-history" aria-live="polite">
+      {% for message in messages %}
+        <article class="message-item {% if message.sender_user_id == current_user.id %}message-own{% endif %}">
+          <p><strong>{{ message.sender_name }}</strong> <time datetime="{{ message.created_at }}">{{ message.created_at }}</time></p>
+          <p>{{ message.body }}</p>
+        </article>
+      {% else %}
+        <p class="muted">No messages yet. Start by describing the project, timeline or requirements.</p>
+      {% endfor %}
+    </div>
+    <form method="POST" class="booking-form message-compose">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label for="message-body">Your message</label>
+      <textarea id="message-body" name="body" rows="4" maxlength="2000" required aria-describedby="message-policy"></textarea>
+      <p id="message-policy" class="muted">Up to 2,000 characters. Phone numbers, email addresses, social handles, external links and off-platform payment requests are blocked. Project details, prices, dates and measurements are welcome.</p>
+      <button class="btn btn-primary" type="submit">Send message</button>
+    </form>
+  </div>
+</section>
+{% endblock %}
