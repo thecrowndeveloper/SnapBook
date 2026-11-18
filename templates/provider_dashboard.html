@@ -75,7 +75,7 @@
       <div class="workspace-grid" style="margin-top:20px">
         {% for item in portfolio_items %}
           <article class="workspace-card"><h3>{{ item.title }}</h3>
-            {% if item.media_type == 'image' %}<img src="{{ url_for('portfolio_media', filename=item.filename) }}" alt="{{ item.title }}" style="width:100%;max-height:280px;object-fit:cover">
+            {% if item.media_type == 'image' %}<img src="{{ url_for('portfolio_media', filename=item.filename) }}" alt="{{ item.title }}" loading="lazy" decoding="async" style="width:100%;max-height:280px;object-fit:cover">
             {% else %}<video controls preload="metadata" style="width:100%;max-height:280px"><source src="{{ url_for('portfolio_media', filename=item.filename) }}" type="video/mp4"></video>{% endif %}
             <p>{{ item.description }}</p>
             <form method="POST" action="{{ url_for('delete_portfolio_item', item_id=item.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="mini-btn" type="submit">Delete item</button></form>
