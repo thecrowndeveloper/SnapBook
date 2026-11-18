@@ -9,15 +9,19 @@
         <article class="message-item {% if message.sender_user_id == current_user.id %}message-own{% endif %}">
           <p><strong>{{ message.sender_name }}</strong> <time datetime="{{ message.created_at }}">{{ message.created_at }}</time></p>
           <p>{{ message.body }}</p>
+          {% if message.attachment_id %}<p><a href="{{ url_for('download_message_attachment', attachment_id=message.attachment_id) }}">Download attached image (WebP)</a></p>{% endif %}
         </article>
       {% else %}
         <p class="muted">No messages yet. Start by describing the project, timeline or requirements.</p>
       {% endfor %}
     </div>
-    <form method="POST" class="booking-form message-compose">
+    <form method="POST" enctype="multipart/form-data" class="booking-form message-compose">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <label for="message-body">Your message</label>
-      <textarea id="message-body" name="body" rows="4" maxlength="2000" required aria-describedby="message-policy"></textarea>
+      <textarea id="message-body" name="body" rows="4" maxlength="2000" aria-describedby="message-policy">{{ message_draft }}</textarea>
+      <label for="message-attachment">Attach an image (optional)</label>
+      <input id="message-attachment" name="attachment" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" aria-describedby="attachment-policy">
+      <p id="attachment-policy" class="muted">JPG, PNG or WEBP only. Maximum 5 MB and 20 megapixels. Images are re-encoded before storage. Documents and videos are not yet supported.</p>
       <p id="message-policy" class="muted">Up to 2,000 characters. Phone numbers, email addresses, social handles, external links and off-platform payment requests are blocked. Project details, prices, dates and measurements are welcome.</p>
       <button class="btn btn-primary" type="submit">Send message</button>
     </form>
