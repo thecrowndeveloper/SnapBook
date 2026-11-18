@@ -471,8 +471,9 @@ def init_db():
         """)
 
         # Marketplace service bookings and enquiries.
-        # Payment and review fields will be added only after gateway verification
-        # and a confirmed completion workflow are implemented.
+        # Fixed-price bookings snapshot the agreed price so later listing edits
+        # cannot change what a client is asked to pay. Payment attempts are
+        # recorded separately in the marketplace_payments ledger.
         con.execute("""
             CREATE TABLE IF NOT EXISTS marketplace_bookings (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
