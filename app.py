@@ -2,6 +2,8 @@
 import os
 import sqlite3
 import hashlib
+import re
+import unicodedata
 import smtplib
 from email.message import EmailMessage
 from pathlib import Path
@@ -593,6 +595,49 @@ def init_db():
             ON portfolio_items(provider_id)
         """)
 
+
+        # Private booking conversations and append-only message history.
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS marketplace_conversations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                booking_id INTEGER NOT NULL UNIQUE,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(booking_id) REFERENCES marketplace_bookings(id)
+                    ON DELETE CASCADE
+            )
+        """)
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS marketplace_messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                conversation_id INTEGER NOT NULL,
+                sender_user_id INTEGER NOT NULL,
+                body TEXT NOT NULL CHECK(length(body) BETWEEN 1 AND 2000),
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(conversation_id) REFERENCES marketplace_conversations(id)
+                    ON DELETE CASCADE,
+                FOREIGN KEY(sender_user_id) REFERENCES users(id)
+            )
+        """)
+        con.execute("""
+            CREATE INDEX IF NOT EXISTS idx_marketplace_messages_conversation
+            ON marketplace_messages(conversation_id, created_at, id)
+        """)
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS message_policy_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                booking_id INTEGER NOT NULL,
+                category TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(user_id) REFERENCES users(id),
+                FOREIGN KEY(booking_id) REFERENCES marketplace_bookings(id)
+            )
+        """)
+        con.execute("""
+            CREATE INDEX IF NOT EXISTS idx_message_policy_events_user
+            ON message_policy_events(user_id, created_at DESC)
+        """)
+
         # Notifications for photographers and marketplace providers
         con.execute("""
             CREATE TABLE IF NOT EXISTS notifications (
@@ -747,6 +792,46 @@ def init_db():
                  image, available_days)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """, seed)
+
+
+
+# Messaging policy: block personal contact exchange before a message is stored.
+_EMAIL_PATTERN = re.compile(r"(?i)\\b[\\w.!#$%&'*+/=?^\`{|}~-]+\\s*(?:@|\\[at\\]|\\(at\\))\\s*[\\w-]+\\s*(?:\\.|\\[dot\\]|\\(dot\\))\\s*[a-z]{2,}\\b")
+_URL_PATTERN = re.compile(r"(?i)\\b(?:https?://|www\\.)\\S+")
+_SOCIAL_PATTERN = re.compile(r"(?i)(?:\\b(?:instagram|facebook|tiktok|telegram|snapchat|x|twitter)\\s*[:@/]\\s*[a-z0-9_.-]{2,}|(?<![\\w@])@[a-z0-9_.]{2,})")
+_PAYMENT_BYPASS_PATTERN = re.compile(
+    r"(?i)\\b(?:pay|send|transfer|wire)\\s+(?:me|to\s+my|outside|directly|via)\\b.{0,45}\\b(?:bank|account|opay|palmpay|moniepoint|whatsapp|cash|transfer)\\b"
+)
+
+def detect_message_contact_violation(message):
+    """Return a policy category when a message attempts to share contact/payment details."""
+    normalized = unicodedata.normalize("NFKC", message or "")
+    lowered = normalized.casefold()
+    if _EMAIL_PATTERN.search(lowered) or re.search(
+        r"(?i)\\b[\\w.-]+\\s*(?:at|\(at\))\\s*[\\w.-]+\\s*(?:dot|\(dot\))\\s*[a-z]{2,}\\b",
+        lowered,
+    ):
+        return "email"
+    if _URL_PATTERN.search(normalized):
+        return "external_link"
+    if _SOCIAL_PATTERN.search(normalized):
+        return "social_handle"
+    if re.search(r"(?i)\\b(?:whatsapp|wa\\.me|telegram|signal)\\b", lowered):
+        return "external_messaging"
+    if _PAYMENT_BYPASS_PATTERN.search(lowered) or re.search(
+        r"(?i)\\b(?:pay outside|off[- ]platform payment|send payment to my|my bank details|account number is)\\b",
+        lowered,
+    ):
+        return "off_platform_payment"
+    # Phone-like digit groups; ignore common date formats and currency/measurement values.
+    for match in re.finditer(r"(?<!\\w)(?:\\+?\\d[\\d().\\s-]{5,}\\d)(?!\\w)", normalized):
+        candidate = match.group(0)
+        digits = re.sub(r"\\D", "", candidate)
+        before = normalized[max(0, match.start() - 3):match.start()]
+        if 7 <= len(digits) <= 15 and not re.search(r"[₦$€£]\\s*$", before):
+            if not re.fullmatch(r"\\d{4}[-/]\\d{1,2}[-/]\\d{1,2}", candidate.strip()):
+                return "phone_number"
+    return None
 
 
 def account_token_serializer():
@@ -2082,6 +2167,127 @@ def request_service(service_id):
 
     flash("Your service request has been sent to the creative professional.", "success")
     return redirect(url_for("my_bookings"))
+
+
+
+@app.route("/messages")
+@login_required
+def message_inbox():
+    if current_user.role not in ("client", "provider"):
+        abort(403)
+    with connect() as con:
+        conversations = con.execute("""
+            SELECT b.id AS booking_id, s.title AS service_title,
+                   b.status, b.updated_at,
+                   CASE WHEN b.client_user_id = ? THEN p.display_name
+                        ELSE u.name END AS other_party,
+                   (SELECT body FROM marketplace_messages m
+                    WHERE m.conversation_id = c.id
+                    ORDER BY m.id DESC LIMIT 1) AS latest_message,
+                   (SELECT COUNT(*) FROM marketplace_messages m
+                    WHERE m.conversation_id = c.id
+                      AND m.sender_user_id != ?) AS incoming_count
+            FROM marketplace_conversations c
+            JOIN marketplace_bookings b ON b.id = c.booking_id
+            JOIN services s ON s.id = b.service_id
+            JOIN providers p ON p.id = b.provider_id
+            JOIN users u ON u.id = b.client_user_id
+            WHERE b.client_user_id = ? OR p.user_id = ?
+            ORDER BY b.updated_at DESC, c.id DESC
+        """, (current_user.id, current_user.id, current_user.id, current_user.id)).fetchall()
+    return render_template("message_inbox.html", conversations=conversations)
+
+
+@app.route("/messages/<int:booking_id>", methods=["GET", "POST"])
+@login_required
+def booking_messages(booking_id):
+    if current_user.role not in ("client", "provider"):
+        abort(403)
+    with connect() as con:
+        booking = con.execute("""
+            SELECT b.id, b.client_user_id, b.provider_id, b.status,
+                   s.title AS service_title, p.user_id AS provider_user_id,
+                   p.display_name AS provider_name, u.name AS client_name
+            FROM marketplace_bookings b
+            JOIN services s ON s.id = b.service_id
+            JOIN providers p ON p.id = b.provider_id
+            JOIN users u ON u.id = b.client_user_id
+            WHERE b.id = ?
+        """, (booking_id,)).fetchone()
+        if not booking:
+            abort(404)
+        if current_user.id not in (booking["client_user_id"], booking["provider_user_id"]):
+            abort(404)
+        if current_user.role == "client" and booking["client_user_id"] != current_user.id:
+            abort(404)
+        if current_user.role == "provider" and booking["provider_user_id"] != current_user.id:
+            abort(404)
+
+        conversation = con.execute(
+            "SELECT id FROM marketplace_conversations WHERE booking_id = ?",
+            (booking_id,),
+        ).fetchone()
+        if not conversation:
+            con.execute(
+                "INSERT INTO marketplace_conversations (booking_id) VALUES (?)",
+                (booking_id,),
+            )
+            conversation_id = con.execute("SELECT last_insert_rowid()").fetchone()[0]
+        else:
+            conversation_id = conversation["id"]
+
+        if request.method == "POST":
+            body = request.form.get("body", "").strip()
+            if not body:
+                flash("Please write a message before sending.", "error")
+                return redirect(url_for("booking_messages", booking_id=booking_id))
+            if len(body) > 2000:
+                flash("Messages must not exceed 2,000 characters.", "error")
+                return redirect(url_for("booking_messages", booking_id=booking_id))
+            violation = detect_message_contact_violation(body)
+            if violation:
+                con.execute("""
+                    INSERT INTO message_policy_events (user_id, booking_id, category)
+                    VALUES (?, ?, ?)
+                """, (current_user.id, booking_id, violation))
+                flash(
+                    "Message not sent. Personal contact details, external links and off-platform payment arrangements are not allowed. Please edit your message and keep the conversation on OneCre8.",
+                    "error",
+                )
+                return redirect(url_for("booking_messages", booking_id=booking_id))
+            con.execute("""
+                INSERT INTO marketplace_messages (conversation_id, sender_user_id, body)
+                VALUES (?, ?, ?)
+            """, (conversation_id, current_user.id, body))
+            con.execute("""
+                UPDATE marketplace_bookings
+                SET updated_at = CURRENT_TIMESTAMP WHERE id = ?
+            """, (booking_id,))
+            recipient_id = (
+                booking["provider_user_id"]
+                if current_user.id == booking["client_user_id"]
+                else booking["client_user_id"]
+            )
+            con.execute("""
+                INSERT INTO notifications (user_id, title, message, notification_type, related_id)
+                VALUES (?, 'New OneCre8 message', 'You have a new message about a booking.', 'marketplace_message', ?)
+            """, (recipient_id, booking_id))
+            flash("Message sent.", "success")
+            return redirect(url_for("booking_messages", booking_id=booking_id))
+
+        messages = con.execute("""
+            SELECT m.id, m.body, m.created_at, m.sender_user_id, u.name AS sender_name
+            FROM marketplace_messages m
+            JOIN users u ON u.id = m.sender_user_id
+            WHERE m.conversation_id = ?
+            ORDER BY m.id DESC LIMIT 100
+        """, (conversation_id,)).fetchall()
+    return render_template(
+        "booking_messages.html",
+        booking=booking,
+        messages=list(reversed(messages)),
+        other_party=(booking["provider_name"] if current_user.id == booking["client_user_id"] else booking["client_name"]),
+    )
 
 
 @app.route("/marketplace-booking/<int:booking_id>/status", methods=["POST"])
