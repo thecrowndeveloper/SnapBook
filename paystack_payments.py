@@ -91,13 +91,32 @@ def _valid_webhook_signature(raw_body, headers, secret_key):
 def create_payment_blueprint(connect, csrf_protect=None):
     payments = Blueprint("payments", __name__)
 
+    def verified_payment_matches(payment, verified):
+        return (
+            verified.get("reference") == payment["reference"]
+            and verified.get("amount") == payment["amount_kobo"]
+            and verified.get("currency") == "NGN"
+            and verified.get("domain") == "test"
+        )
+
+    def record_verified_failure(payment, verified):
+        if verified.get("status") not in ("failed", "abandoned", "reversed"):
+            return False
+        if not verified_payment_matches(payment, verified):
+            return False
+        with connect() as con:
+            con.execute("BEGIN IMMEDIATE")
+            con.execute(
+                """UPDATE marketplace_payments SET status = 'failed'
+                   WHERE id = ? AND status = 'pending'""",
+                (payment["id"],),
+            )
+        return True
+
     def record_verified_success(payment, verified):
         if (
             verified.get("status") != "success"
-            or verified.get("reference") != payment["reference"]
-            or verified.get("amount") != payment["amount_kobo"]
-            or verified.get("currency") != "NGN"
-            or verified.get("domain") != "test"
+            or not verified_payment_matches(payment, verified)
         ):
             return False
 
@@ -138,6 +157,7 @@ def create_payment_blueprint(connect, csrf_protect=None):
             abort(503, description="Paystack sandbox is not configured.")
 
         with connect() as con:
+            con.execute("BEGIN IMMEDIATE")
             booking = con.execute(
                 """SELECT b.*, s.title AS service_title, s.price,
                           s.pricing_mode, s.booking_mode, u.email AS client_email
@@ -259,6 +279,8 @@ def create_payment_blueprint(connect, csrf_protect=None):
 
         if record_verified_success(payment, verified):
             flash("Sandbox payment verified successfully. No real money was collected.", "success")
+        elif record_verified_failure(payment, verified):
+            flash("The sandbox payment did not complete. You can try again.", "error")
         else:
             flash("The payment has not been verified as successful. Your booking remains unpaid.", "error")
         return redirect(url_for("my_bookings"))
