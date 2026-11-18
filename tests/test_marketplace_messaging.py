@@ -263,6 +263,115 @@ class MarketplaceMessagingTests(unittest.TestCase):
         outsider = self.logged_in(self.outsider_id)
         self.assertEqual(outsider.get("/moderation/messages").status_code, 404)
 
+    def make_restriction(self):
+        with connect() as con:
+            conversation_id = con.execute(
+                "SELECT id FROM marketplace_conversations WHERE booking_id=?",
+                (self.booking_id,),
+            ).fetchone()["id"]
+            message = con.execute(
+                """INSERT INTO marketplace_messages (conversation_id, sender_user_id, body)
+                   VALUES (?, ?, ?)""",
+                (conversation_id, self.provider_user_id, "A report for appeal testing."),
+            )
+            report = con.execute(
+                """INSERT INTO marketplace_message_reports
+                   (booking_id, message_id, reporter_user_id, reported_user_id, reason)
+                   VALUES (?, ?, ?, ?, 'other')""",
+                (self.booking_id, message.lastrowid, self.client_id, self.provider_user_id),
+            )
+            restriction = con.execute(
+                """INSERT INTO marketplace_messaging_restrictions
+                   (user_id, report_id, moderator_user_id, reason, ends_at)
+                   VALUES (?, ?, ?, 'Test restriction', datetime('now', '+1 day'))""",
+                (self.provider_user_id, report.lastrowid, self.moderator_id),
+            )
+            return restriction.lastrowid
+
+    def test_restriction_appeal_is_private_unique_and_can_lift_restriction(self):
+        restriction_id = self.make_restriction()
+        provider = self.logged_in(self.provider_user_id)
+        conversation = provider.get(f"/messages/{self.booking_id}")
+        self.assertEqual(conversation.status_code, 200)
+        self.assertIn(b"Submit review request", conversation.data)
+
+        outsider = self.logged_in(self.outsider_id)
+        denied = outsider.post(
+            f"/messages/restrictions/{restriction_id}/appeal",
+            data={"appeal_text": "I would like this restriction reviewed, please."},
+        )
+        self.assertEqual(denied.status_code, 404)
+
+        appeal_data = {"appeal_text": "I believe this restriction was applied in error. Please review the conversation context."}
+        submitted = provider.post(
+            f"/messages/restrictions/{restriction_id}/appeal",
+            data=appeal_data,
+            follow_redirects=True,
+        )
+        self.assertEqual(submitted.status_code, 200)
+        self.assertIn(b"review request has been submitted", submitted.data.lower())
+        duplicate = provider.post(
+            f"/messages/restrictions/{restriction_id}/appeal",
+            data=appeal_data,
+            follow_redirects=True,
+        )
+        self.assertIn(b"already been submitted", duplicate.data)
+
+        with connect() as con:
+            appeal = con.execute(
+                "SELECT id, status FROM marketplace_messaging_appeals WHERE restriction_id=?",
+                (restriction_id,),
+            ).fetchone()
+        self.assertEqual(appeal["status"], "open")
+
+        outsider_queue = outsider.get("/moderation/appeals")
+        self.assertEqual(outsider_queue.status_code, 404)
+        moderator = self.logged_in(self.moderator_id)
+        queue = moderator.get("/moderation/appeals")
+        self.assertEqual(queue.status_code, 200)
+        self.assertIn(b"Messaging restriction appeals", queue.data)
+
+        decision = moderator.post(
+            f"/moderation/appeals/{appeal['id']}",
+            data={"action": "lift", "note": "Reviewed the context; restriction lifted."},
+            follow_redirects=True,
+        )
+        self.assertEqual(decision.status_code, 200)
+        with connect() as con:
+            status = con.execute(
+                "SELECT status FROM marketplace_messaging_appeals WHERE id=?",
+                (appeal["id"],),
+            ).fetchone()["status"]
+            active = con.execute(
+                "SELECT active FROM marketplace_messaging_restrictions WHERE id=?",
+                (restriction_id,),
+            ).fetchone()["active"]
+        self.assertEqual(status, "lifted")
+        self.assertEqual(active, 0)
+
+        sent = provider.post(
+            f"/messages/{self.booking_id}",
+            data={"body": "I can now continue discussing the project."},
+            follow_redirects=True,
+        )
+        self.assertIn(b"Message sent", sent.data)
+
+    def test_appeal_must_have_minimum_explanation(self):
+        restriction_id = self.make_restriction()
+        provider = self.logged_in(self.provider_user_id)
+        response = provider.post(
+            f"/messages/restrictions/{restriction_id}/appeal",
+            data={"appeal_text": "Too short"},
+            follow_redirects=True,
+        )
+        self.assertIn(b"20 to 1,000 characters", response.data)
+        with connect() as con:
+            count = con.execute(
+                "SELECT COUNT(*) FROM marketplace_messaging_appeals WHERE restriction_id=?",
+                (restriction_id,),
+            ).fetchone()[0]
+        self.assertEqual(count, 0)
+
     def test_valid_message_is_stored_and_notifies_other_participant(self):
         client = self.logged_in(self.client_id)
         with connect() as con:
