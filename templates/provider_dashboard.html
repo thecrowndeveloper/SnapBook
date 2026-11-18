@@ -88,6 +88,7 @@
       {% for booking in marketplace_bookings %}
         <div class="service-listing"><h3>{{ booking.service_title }}</h3><p><strong>Client:</strong> {{ booking.client_name }}</p>
           <p><strong>Preferred date:</strong> {{ booking.requested_date }}</p><p>{{ booking.client_message or 'No additional message.' }}</p><p><strong>Status:</strong> {{ booking.status }}</p>
+          {% if booking.payment_status == 'success' %}<p class="muted">Payment verified · Sandbox transaction</p>{% endif %}
           {% set next_status = {'Requested':['Accepted','Cancelled'],'Accepted':['In Progress','Cancelled'],'In Progress':['Awaiting Client Confirmation']} %}
           {% if next_status.get(booking.status) %}<form method="POST" action="{{ url_for('marketplace_booking_status', booking_id=booking.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><select name="status" aria-label="Update status for {{ booking.service_title }}">{% for option in next_status[booking.status] %}<option value="{{ option }}">{{ option }}</option>{% endfor %}</select><button class="mini-btn" type="submit">Update status</button></form>{% endif %}
         </div>
