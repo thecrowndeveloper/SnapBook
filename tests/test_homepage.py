@@ -259,3 +259,56 @@ class BookingAuthorizationRegressionTests(unittest.TestCase):
             self.provider_user_one_id, booking_id, "Completed"
         )
         self.assertEqual(response.status_code, 400)
+
+    def post_review_as(self, user_id, booking_id, rating="5", review_text="Great work"):
+        from app import app
+
+        old_csrf = app.config.get("WTF_CSRF_ENABLED", True)
+        app.config["WTF_CSRF_ENABLED"] = False
+        try:
+            with app.test_client() as client:
+                with client.session_transaction() as session:
+                    session["_user_id"] = str(user_id)
+                    session["_fresh"] = True
+                return client.post(
+                    f"/marketplace-booking/{booking_id}/review",
+                    data={"rating": rating, "review_text": review_text},
+                )
+        finally:
+            app.config["WTF_CSRF_ENABLED"] = old_csrf
+
+    def test_only_booking_owner_can_review_completed_work(self):
+        booking_id = self.create_booking(
+            client_user_id=self.client_one_id, status="Completed"
+        )
+        response = self.post_review_as(self.client_two_id, booking_id)
+        self.assertEqual(response.status_code, 404)
+
+    def test_reviews_require_completed_booking(self):
+        booking_id = self.create_booking(
+            client_user_id=self.client_one_id, status="Accepted"
+        )
+        response = self.post_review_as(self.client_one_id, booking_id)
+        self.assertEqual(response.status_code, 400)
+
+    def test_completed_booking_accepts_only_one_review(self):
+        booking_id = self.create_booking(
+            client_user_id=self.client_one_id, status="Completed"
+        )
+        first = self.post_review_as(self.client_one_id, booking_id, "5", "Excellent")
+        second = self.post_review_as(self.client_one_id, booking_id, "4", "Another review")
+        self.assertEqual(first.status_code, 302)
+        self.assertEqual(second.status_code, 409)
+        with self.connect() as con:
+            reviews = con.execute(
+                "SELECT COUNT(*) FROM marketplace_reviews WHERE booking_id = ?",
+                (booking_id,),
+            ).fetchone()[0]
+        self.assertEqual(reviews, 1)
+
+    def test_review_rating_must_be_between_one_and_five(self):
+        booking_id = self.create_booking(
+            client_user_id=self.client_one_id, status="Completed"
+        )
+        response = self.post_review_as(self.client_one_id, booking_id, "6")
+        self.assertEqual(response.status_code, 400)
