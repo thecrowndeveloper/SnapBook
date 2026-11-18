@@ -139,6 +139,14 @@ PORTFOLIO_UPLOAD_FOLDER = (
 )
 PORTFOLIO_UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
 
+# Private message images are stored separately from public portfolio media.
+MESSAGE_ATTACHMENT_FOLDER = (
+    Path(volume_path) / "message-attachments"
+    if volume_path
+    else Path(__file__).with_name("message_attachments")
+)
+MESSAGE_ATTACHMENT_FOLDER.mkdir(parents=True, exist_ok=True)
+
 app.config["PORTFOLIO_UPLOAD_FOLDER"] = str(PORTFOLIO_UPLOAD_FOLDER)
 app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024
 
@@ -623,6 +631,26 @@ def init_db():
             CREATE INDEX IF NOT EXISTS idx_marketplace_messages_conversation
             ON marketplace_messages(conversation_id, created_at, id)
         """)
+
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS marketplace_message_attachments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                message_id INTEGER NOT NULL UNIQUE,
+                booking_id INTEGER NOT NULL,
+                filename TEXT NOT NULL UNIQUE,
+                file_size INTEGER NOT NULL CHECK(file_size > 0 AND file_size <= 5242880),
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(message_id) REFERENCES marketplace_messages(id)
+                    ON DELETE CASCADE,
+                FOREIGN KEY(booking_id) REFERENCES marketplace_bookings(id)
+                    ON DELETE CASCADE
+            )
+        """)
+        con.execute("""
+            CREATE INDEX IF NOT EXISTS idx_message_attachments_booking
+            ON marketplace_message_attachments(booking_id, id)
+        """)
+
         con.execute("""
             CREATE TABLE IF NOT EXISTS message_policy_events (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -803,6 +831,45 @@ _SOCIAL_PATTERN = re.compile(r"(?i)(?:\b(?:instagram|facebook|tiktok|telegram|sn
 _PAYMENT_BYPASS_PATTERN = re.compile(
     r"(?i)\b(?:pay|send|transfer|wire)\s+(?:me|to\s+my|outside|directly|via)\b.{0,45}\b(?:bank|account|opay|palmpay|moniepoint|whatsapp|cash|transfer)\b"
 )
+
+
+MAX_MESSAGE_IMAGE_BYTES = 5 * 1024 * 1024
+MAX_MESSAGE_IMAGE_PIXELS = 20_000_000
+
+
+def save_private_message_image(uploaded_file):
+    """Decode and re-encode a small raster image to remove active content and metadata."""
+    stream = uploaded_file.stream
+    try:
+        stream.seek(0, os.SEEK_END)
+        size = stream.tell()
+        stream.seek(0)
+    except (AttributeError, OSError) as error:
+        raise ValueError("The image could not be read. Please choose another file.") from error
+    if size <= 0:
+        raise ValueError("The selected image is empty.")
+    if size > MAX_MESSAGE_IMAGE_BYTES:
+        raise ValueError("Message images must not exceed 5 MB.")
+    filename = f"{uuid4().hex}.webp"
+    destination = MESSAGE_ATTACHMENT_FOLDER / filename
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", Image.DecompressionBombWarning)
+            with Image.open(stream) as opened:
+                if opened.format not in {"JPEG", "PNG", "WEBP"}:
+                    raise ValueError("Only JPG, PNG or WEBP images are accepted in messages.")
+                if opened.width * opened.height > MAX_MESSAGE_IMAGE_PIXELS:
+                    raise ValueError("This image is too large. Please choose an image under 20 megapixels.")
+                image = ImageOps.exif_transpose(opened)
+                image.thumbnail((2000, 2000), Image.Resampling.LANCZOS)
+                image = image.convert("RGBA" if "A" in image.getbands() else "RGB")
+                image.save(destination, "WEBP", quality=82, method=6)
+    except (Image.DecompressionBombError, Image.DecompressionBombWarning) as error:
+        raise ValueError("This image is too large to process safely.") from error
+    except (OSError, SyntaxError) as error:
+        raise ValueError("The image file is invalid or damaged.") from error
+    return filename, destination.stat().st_size
+
 
 def detect_message_contact_violation(message):
     """Return a policy category when a message attempts to share contact/payment details."""
@@ -2239,10 +2306,14 @@ def booking_messages(booking_id):
 
         if request.method == "POST":
             body = request.form.get("body", "").strip()
-            if not body:
-                flash("Please write a message before sending.", "error")
+            uploaded_image = request.files.get("attachment")
+            has_image = bool(uploaded_image and uploaded_image.filename)
+            if not body and not has_image:
+                session[f"message_draft_{booking_id}"] = body
+                flash("Write a message or attach an image before sending.", "error")
                 return redirect(url_for("booking_messages", booking_id=booking_id))
             if len(body) > 2000:
+                session[f"message_draft_{booking_id}"] = body
                 flash("Messages must not exceed 2,000 characters.", "error")
                 return redirect(url_for("booking_messages", booking_id=booking_id))
             violation = detect_message_contact_violation(body)
@@ -2251,15 +2322,32 @@ def booking_messages(booking_id):
                     INSERT INTO message_policy_events (user_id, booking_id, category)
                     VALUES (?, ?, ?)
                 """, (current_user.id, booking_id, violation))
+                session[f"message_draft_{booking_id}"] = body
                 flash(
                     "Message not sent. Personal contact details, external links and off-platform payment arrangements are not allowed. Please edit your message and keep the conversation on OneCre8.",
                     "error",
                 )
                 return redirect(url_for("booking_messages", booking_id=booking_id))
-            con.execute("""
+            saved_image = None
+            if has_image:
+                try:
+                    saved_image = save_private_message_image(uploaded_image)
+                except ValueError as error:
+                    session[f"message_draft_{booking_id}"] = body
+                    flash(str(error), "error")
+                    return redirect(url_for("booking_messages", booking_id=booking_id))
+            message_body = body or "Shared an image."
+            message_cursor = con.execute("""
                 INSERT INTO marketplace_messages (conversation_id, sender_user_id, body)
                 VALUES (?, ?, ?)
-            """, (conversation_id, current_user.id, body))
+            """, (conversation_id, current_user.id, message_body))
+            if saved_image:
+                con.execute("""
+                    INSERT INTO marketplace_message_attachments
+                        (message_id, booking_id, filename, file_size)
+                    VALUES (?, ?, ?, ?)
+                """, (message_cursor.lastrowid, booking_id, saved_image[0], saved_image[1]))
+            session.pop(f"message_draft_{booking_id}", None)
             con.execute("""
                 UPDATE marketplace_bookings
                 SET updated_at = CURRENT_TIMESTAMP WHERE id = ?
@@ -2277,17 +2365,46 @@ def booking_messages(booking_id):
             return redirect(url_for("booking_messages", booking_id=booking_id))
 
         messages = con.execute("""
-            SELECT m.id, m.body, m.created_at, m.sender_user_id, u.name AS sender_name
+            SELECT m.id, m.body, m.created_at, m.sender_user_id,
+                   u.name AS sender_name, a.id AS attachment_id
             FROM marketplace_messages m
             JOIN users u ON u.id = m.sender_user_id
+            LEFT JOIN marketplace_message_attachments a ON a.message_id = m.id
             WHERE m.conversation_id = ?
             ORDER BY m.id DESC LIMIT 100
         """, (conversation_id,)).fetchall()
+        message_draft = session.pop(f"message_draft_{booking_id}", "")
     return render_template(
         "booking_messages.html",
         booking=booking,
         messages=list(reversed(messages)),
         other_party=(booking["provider_name"] if current_user.id == booking["client_user_id"] else booking["client_name"]),
+        message_draft=message_draft,
+    )
+
+
+@app.route("/messages/attachments/<int:attachment_id>")
+@login_required
+def download_message_attachment(attachment_id):
+    with connect() as con:
+        attachment = con.execute("""
+            SELECT a.filename, b.client_user_id, p.user_id AS provider_user_id
+            FROM marketplace_message_attachments a
+            JOIN marketplace_bookings b ON b.id = a.booking_id
+            JOIN providers p ON p.id = b.provider_id
+            WHERE a.id = ?
+        """, (attachment_id,)).fetchone()
+    if not attachment:
+        abort(404)
+    if current_user.id not in (attachment["client_user_id"], attachment["provider_user_id"]):
+        abort(404)
+    return send_from_directory(
+        MESSAGE_ATTACHMENT_FOLDER,
+        attachment["filename"],
+        as_attachment=True,
+        download_name=f"onecre8-message-image-{attachment_id}.webp",
+        mimetype="image/webp",
+        max_age=0,
     )
 
 
