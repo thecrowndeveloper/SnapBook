@@ -667,6 +667,58 @@ def init_db():
             ON message_policy_events(user_id, created_at DESC)
         """)
 
+
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS marketplace_message_reports (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                booking_id INTEGER NOT NULL,
+                message_id INTEGER NOT NULL,
+                reporter_user_id INTEGER NOT NULL,
+                reported_user_id INTEGER NOT NULL,
+                reason TEXT NOT NULL CHECK(reason IN (
+                    'contact_exchange', 'harassment', 'scam_payment',
+                    'inappropriate_content', 'other'
+                )),
+                details TEXT NOT NULL DEFAULT '' CHECK(length(details) <= 1000),
+                status TEXT NOT NULL DEFAULT 'open'
+                    CHECK(status IN ('open', 'in_review', 'actioned', 'dismissed')),
+                moderator_note TEXT NOT NULL DEFAULT '' CHECK(length(moderator_note) <= 1000),
+                reviewed_by INTEGER,
+                reviewed_at TEXT,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(booking_id) REFERENCES marketplace_bookings(id),
+                FOREIGN KEY(message_id) REFERENCES marketplace_messages(id),
+                FOREIGN KEY(reporter_user_id) REFERENCES users(id),
+                FOREIGN KEY(reported_user_id) REFERENCES users(id),
+                FOREIGN KEY(reviewed_by) REFERENCES users(id),
+                UNIQUE(message_id, reporter_user_id)
+            )
+        """)
+        con.execute("""
+            CREATE INDEX IF NOT EXISTS idx_message_reports_status
+            ON marketplace_message_reports(status, created_at DESC)
+        """)
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS marketplace_messaging_restrictions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                report_id INTEGER NOT NULL,
+                moderator_user_id INTEGER NOT NULL,
+                reason TEXT NOT NULL CHECK(length(reason) BETWEEN 1 AND 500),
+                starts_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                ends_at TEXT NOT NULL,
+                active INTEGER NOT NULL DEFAULT 1 CHECK(active IN (0, 1)),
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(user_id) REFERENCES users(id),
+                FOREIGN KEY(report_id) REFERENCES marketplace_message_reports(id),
+                FOREIGN KEY(moderator_user_id) REFERENCES users(id)
+            )
+        """)
+        con.execute("""
+            CREATE INDEX IF NOT EXISTS idx_messaging_restrictions_user
+            ON marketplace_messaging_restrictions(user_id, active, ends_at)
+        """)
+
         # Notifications for photographers and marketplace providers
         con.execute("""
             CREATE TABLE IF NOT EXISTS notifications (
@@ -1084,6 +1136,38 @@ def legal_documents():
             ]
         }
     }
+
+
+
+def is_onecre8_moderator(user_id):
+    """Moderator access is restricted to server-configured account IDs."""
+    configured_ids = {
+        value.strip()
+        for value in os.environ.get("ONECRE8_MODERATOR_USER_IDS", "").split(",")
+        if value.strip().isdigit()
+    }
+    return str(user_id) in configured_ids
+
+
+def messaging_restriction_for(user_id, con=None):
+    """Return the active temporary restriction, if any."""
+    if con is not None:
+        return con.execute("""
+            SELECT id, ends_at, reason
+            FROM marketplace_messaging_restrictions
+            WHERE user_id = ? AND active = 1
+              AND ends_at > CURRENT_TIMESTAMP
+            ORDER BY ends_at DESC LIMIT 1
+        """, (user_id,)).fetchone()
+    with connect() as db:
+        return messaging_restriction_for(user_id, db)
+
+
+def moderator_required():
+    if not current_user.is_authenticated:
+        return redirect(url_for("login"))
+    if not is_onecre8_moderator(current_user.id):
+        abort(404)
 
 
 def role_required(role):
@@ -2308,6 +2392,13 @@ def booking_messages(booking_id):
             conversation_id = conversation["id"]
 
         if request.method == "POST":
+            restriction = messaging_restriction_for(current_user.id, con)
+            if restriction:
+                flash(
+                    f"Messaging is temporarily restricted on this account until {restriction['ends_at']}. You can still read this conversation.",
+                    "error",
+                )
+                return redirect(url_for("booking_messages", booking_id=booking_id))
             body = request.form.get("body", "").strip()
             uploaded_image = request.files.get("attachment")
             has_image = bool(uploaded_image and uploaded_image.filename)
@@ -2389,6 +2480,130 @@ def booking_messages(booking_id):
         other_party=(booking["provider_name"] if current_user.id == booking["client_user_id"] else booking["client_name"]),
         message_draft=message_draft,
     )
+
+
+
+@app.route("/messages/<int:booking_id>/report/<int:message_id>", methods=["POST"])
+@login_required
+def report_marketplace_message(booking_id, message_id):
+    if current_user.role not in ("client", "provider"):
+        abort(403)
+    reason = request.form.get("reason", "").strip()
+    details = request.form.get("details", "").strip()
+    allowed_reasons = {
+        "contact_exchange", "harassment", "scam_payment",
+        "inappropriate_content", "other",
+    }
+    if reason not in allowed_reasons or len(details) > 1000:
+        flash("Please choose a valid report reason and keep details under 1,000 characters.", "error")
+        return redirect(url_for("booking_messages", booking_id=booking_id))
+    with connect() as con:
+        row = con.execute("""
+            SELECT m.id, m.sender_user_id, b.client_user_id, p.user_id AS provider_user_id
+            FROM marketplace_messages m
+            JOIN marketplace_conversations c ON c.id = m.conversation_id
+            JOIN marketplace_bookings b ON b.id = c.booking_id
+            JOIN providers p ON p.id = b.provider_id
+            WHERE m.id = ? AND b.id = ?
+        """, (message_id, booking_id)).fetchone()
+        if not row or current_user.id not in (row["client_user_id"], row["provider_user_id"]):
+            abort(404)
+        if row["sender_user_id"] == current_user.id:
+            abort(400)
+        try:
+            con.execute("""
+                INSERT INTO marketplace_message_reports
+                    (booking_id, message_id, reporter_user_id, reported_user_id, reason, details)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (
+                booking_id, message_id, current_user.id,
+                row["sender_user_id"], reason, details,
+            ))
+        except sqlite3.IntegrityError:
+            flash("You have already reported this message. The existing report remains available for review.", "info")
+        else:
+            flash("Report submitted. It will be reviewed by the OneCre8 moderation team.", "success")
+    return redirect(url_for("booking_messages", booking_id=booking_id))
+
+
+@app.route("/moderation/messages")
+@login_required
+def moderation_message_queue():
+    moderator_required()
+    with connect() as con:
+        reports = con.execute("""
+            SELECT r.id, r.booking_id, r.message_id, r.reason, r.details,
+                   r.status, r.created_at, r.moderator_note,
+                   reporter.name AS reporter_name, reported.name AS reported_name,
+                   m.body AS message_body, s.title AS service_title
+            FROM marketplace_message_reports r
+            JOIN users reporter ON reporter.id = r.reporter_user_id
+            JOIN users reported ON reported.id = r.reported_user_id
+            JOIN marketplace_messages m ON m.id = r.message_id
+            JOIN marketplace_bookings b ON b.id = r.booking_id
+            JOIN services s ON s.id = b.service_id
+            ORDER BY CASE r.status WHEN 'open' THEN 0 WHEN 'in_review' THEN 1 ELSE 2 END,
+                     r.created_at DESC
+            LIMIT 200
+        """).fetchall()
+    return render_template("moderation_messages.html", reports=reports)
+
+
+@app.route("/moderation/messages/<int:report_id>", methods=["POST"])
+@login_required
+def review_marketplace_message_report(report_id):
+    moderator_required()
+    action = request.form.get("action", "").strip()
+    note = request.form.get("note", "").strip()
+    if action not in {"in_review", "dismiss", "restrict_24h", "restrict_72h", "restrict_7d"} or len(note) > 1000:
+        abort(400)
+    with connect() as con:
+        report = con.execute("""
+            SELECT id, reported_user_id, status
+            FROM marketplace_message_reports WHERE id = ?
+        """, (report_id,)).fetchone()
+        if not report:
+            abort(404)
+        if report["status"] in ("actioned", "dismissed"):
+            flash("This report has already been closed.", "info")
+            return redirect(url_for("moderation_message_queue"))
+        if action == "in_review":
+            con.execute("""
+                UPDATE marketplace_message_reports
+                SET status='in_review', moderator_note=?, reviewed_by=?, reviewed_at=CURRENT_TIMESTAMP
+                WHERE id=?
+            """, (note, current_user.id, report_id))
+        elif action == "dismiss":
+            con.execute("""
+                UPDATE marketplace_message_reports
+                SET status='dismissed', moderator_note=?, reviewed_by=?, reviewed_at=CURRENT_TIMESTAMP
+                WHERE id=?
+            """, (note, current_user.id, report_id))
+        else:
+            hours = {"restrict_24h": 24, "restrict_72h": 72, "restrict_7d": 168}[action]
+            restriction_reason = note or "Temporary messaging restriction following a reviewed report."
+            con.execute("""
+                INSERT INTO marketplace_messaging_restrictions
+                    (user_id, report_id, moderator_user_id, reason, ends_at)
+                VALUES (?, ?, ?, ?, datetime('now', ?))
+            """, (
+                report["reported_user_id"], report_id, current_user.id,
+                restriction_reason, f"+{hours} hours",
+            ))
+            con.execute("""
+                UPDATE marketplace_message_reports
+                SET status='actioned', moderator_note=?, reviewed_by=?, reviewed_at=CURRENT_TIMESTAMP
+                WHERE id=?
+            """, (note, current_user.id, report_id))
+            con.execute("""
+                INSERT INTO notifications
+                    (user_id, title, message, notification_type, related_id)
+                VALUES (?, 'OneCre8 messaging restriction',
+                        'Your messaging access is temporarily restricted following a policy review. You can still read existing conversations. Contact OneCre8 support to request a review.',
+                        'messaging_restriction', ?)
+            """, (report["reported_user_id"], report_id))
+    flash("Moderation decision saved.", "success")
+    return redirect(url_for("moderation_message_queue"))
 
 
 @app.route("/messages/attachments/<int:attachment_id>")
