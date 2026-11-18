@@ -543,6 +543,37 @@ def init_db():
             )
         """)
 
+        # Composite indexes support the homepage's category shelves, recent
+        # portfolio previews, and per-user dashboard feeds without table scans.
+        con.execute("""
+            CREATE INDEX IF NOT EXISTS idx_services_active_category_created
+            ON services(is_active, category_id, created_at DESC)
+        """)
+        con.execute("""
+            CREATE INDEX IF NOT EXISTS idx_products_active_category_created
+            ON products(is_active, category_id, created_at DESC)
+        """)
+        con.execute("""
+            CREATE INDEX IF NOT EXISTS idx_portfolio_provider_type_created
+            ON portfolio_items(provider_id, media_type, created_at DESC)
+        """)
+        con.execute("""
+            CREATE INDEX IF NOT EXISTS idx_notifications_user_read_created
+            ON notifications(user_id, is_read, created_at DESC)
+        """)
+        con.execute("""
+            CREATE INDEX IF NOT EXISTS idx_marketplace_bookings_client_created
+            ON marketplace_bookings(client_user_id, created_at DESC)
+        """)
+        con.execute("""
+            CREATE INDEX IF NOT EXISTS idx_marketplace_bookings_provider_created
+            ON marketplace_bookings(provider_id, created_at DESC)
+        """)
+        con.execute("""
+            CREATE INDEX IF NOT EXISTS idx_provider_categories_category
+            ON provider_categories(category_id, provider_id)
+        """)
+
         # Add the initial marketplace categories
         categories = [
             ("Photography", "photography"),
