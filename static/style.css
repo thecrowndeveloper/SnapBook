@@ -3493,3 +3493,26 @@ textarea {
   .workspace-hero-actions { width: 100%; }
   .workspace-hero-actions .btn { flex: 1 1 100%; text-align: center; }
 }
+
+
+/* OneCre8 profile actions and direct contact flow */
+.public-profile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin: 20px 0 8px;
+}
+.public-profile-actions .btn {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+@media (max-width: 600px) {
+  .public-profile-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .public-profile-actions .btn { width: 100%; }
+}
