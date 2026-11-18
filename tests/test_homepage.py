@@ -230,3 +230,21 @@ class BookingAuthorizationRegressionTests(unittest.TestCase):
             self.provider_user_one_id, booking_id, "Completed"
         )
         self.assertEqual(response.status_code, 400)
+
+    def test_booking_cannot_reference_another_professionals_service(self):
+        from app import connect
+        import sqlite3
+
+        with self.assertRaises(sqlite3.IntegrityError):
+            with connect() as con:
+                con.execute(
+                    """INSERT INTO marketplace_bookings
+                       (service_id, provider_id, client_user_id, requested_date)
+                       VALUES (?, ?, ?, ?)""",
+                    (
+                        self.service_id,
+                        self.provider_two_id,
+                        self.client_one_id,
+                        "2030-01-15",
+                    ),
+                )
