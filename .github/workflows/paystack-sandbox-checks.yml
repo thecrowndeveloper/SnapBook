@@ -1,0 +1,35 @@
+name: OneCre8 Paystack sandbox checks
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "app.py"
+      - "paystack_payments.py"
+      - "tests/test_paystack_payments.py"
+      - "requirements.txt"
+      - ".github/workflows/paystack-sandbox-checks.yml"
+  workflow_dispatch:
+
+jobs:
+  paystack-sandbox-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Compile payment integration
+        run: python -m py_compile app.py paystack_payments.py
+      - name: Run payment security regression tests
+        env:
+          SECRET_KEY: onecre8-payment-ci-secret-not-for-production
+          COOKIE_SECURE: "false"
+          RAILWAY_VOLUME_MOUNT_PATH: ${{ runner.temp }}/onecre8-payment-tests
+        run: python -m unittest discover -s tests -p "test_paystack_payments.py" -v
