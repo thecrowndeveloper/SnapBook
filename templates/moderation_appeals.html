@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Messaging appeals · OneCre8 moderation{% endblock %}
+{% block content %}
+<section class="section dashboard">
+  <div class="workspace-hero">
+    <div><p class="eyebrow">TRUST & SAFETY</p><h1>Messaging restriction appeals</h1><p class="muted">Review user requests and record a reasoned decision.</p></div>
+    <a class="btn dark" href="{{ url_for('moderation_message_queue') }}">Message reports</a>
+  </div>
+  <div class="workspace-card workspace-card-wide">
+    {% for appeal in appeals %}
+      <article class="message-item">
+        <p><strong>Appeal #{{ appeal.id }}</strong> · {{ appeal.status|replace('_', ' ')|title }} · {{ appeal.created_at }}</p>
+        <p><strong>Account:</strong> {{ appeal.user_name }} · <strong>Service:</strong> {{ appeal.service_title }}</p>
+        <p><strong>Restriction:</strong> {{ appeal.reason }} · {{ appeal.starts_at }} to {{ appeal.ends_at }} · {% if appeal.active %}Active{% else %}Inactive{% endif %}</p>
+        <p><strong>Request:</strong></p>
+        <blockquote>{{ appeal.appeal_text }}</blockquote>
+        {% if appeal.moderator_note %}<p><strong>Previous moderator note:</strong> {{ appeal.moderator_note }}</p>{% endif %}
+        {% if appeal.status not in ('upheld', 'lifted') %}
+          <form method="POST" action="{{ url_for('review_messaging_restriction_appeal', appeal_id=appeal.id) }}" class="booking-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label for="appeal-note-{{ appeal.id }}">Decision note (maximum 1,000 characters)</label>
+            <textarea id="appeal-note-{{ appeal.id }}" name="note" rows="3" maxlength="1000"></textarea>
+            <label for="appeal-action-{{ appeal.id }}">Decision</label>
+            <select id="appeal-action-{{ appeal.id }}" name="action" required>
+              <option value="">Choose an action</option>
+              <option value="in_review">Mark as under review</option>
+              <option value="uphold">Uphold restriction</option>
+              <option value="lift">Lift restriction</option>
+            </select>
+            <button class="btn btn-primary" type="submit">Save appeal decision</button>
+          </form>
+        {% endif %}
+      </article>
+    {% else %}
+      <p class="muted">There are no messaging appeals to review.</p>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
