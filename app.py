@@ -465,6 +465,37 @@ def init_db():
             ON marketplace_bookings(provider_id)
         """)
 
+        # Keep the booking's professional consistent with the selected service.
+        # This protects the relationship even if a future code path writes bookings.
+        con.execute("""
+            CREATE TRIGGER IF NOT EXISTS trg_booking_service_provider_insert
+            BEFORE INSERT ON marketplace_bookings
+            FOR EACH ROW
+            WHEN NOT EXISTS (
+                SELECT 1
+                FROM services
+                WHERE id = NEW.service_id
+                  AND provider_id = NEW.provider_id
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'booking provider must own selected service');
+            END
+        """)
+        con.execute("""
+            CREATE TRIGGER IF NOT EXISTS trg_booking_service_provider_update
+            BEFORE UPDATE OF service_id, provider_id ON marketplace_bookings
+            FOR EACH ROW
+            WHEN NOT EXISTS (
+                SELECT 1
+                FROM services
+                WHERE id = NEW.service_id
+                  AND provider_id = NEW.provider_id
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'booking provider must own selected service');
+            END
+        """)
+
         # Artwork for sale and costumes for rent
         con.execute("""
             CREATE TABLE IF NOT EXISTS products (
