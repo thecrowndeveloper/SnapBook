@@ -10,7 +10,7 @@
 - Contact and off-platform payment screening runs on the server before a message is inserted. Blocked attempts are not delivered; a policy event category is recorded for future moderation.
 - A notification is created for the other booking participant after a successful send.
 - Participants can report another participant's message for contact exchange, harassment, suspicious payment requests, inappropriate content or another concern. A reporter can submit one report per message.
-- A moderator queue is restricted to account IDs explicitly configured in `ONECRE8_MODERATOR_USER_IDS` or exact account email addresses explicitly configured in `ONECRE8_MODERATOR_EMAILS` (comma-separated). Email matching trims whitespace and ignores case; no account is granted moderation access by default.
+- A moderator queue is restricted to account IDs explicitly configured in `ONECRE8_MODERATOR_USER_IDS` or exact, verified account email addresses explicitly configured in `ONECRE8_MODERATOR_EMAILS` (comma-separated). Email matching trims whitespace and ignores case; email-based access requires a non-empty `email_verified_at` timestamp; no account is granted moderation access by default.
 - Moderators can mark a report under review, dismiss it with a note, or apply a temporary 24-hour, 72-hour or 7-day messaging restriction. Restricted users can still read conversations and may request a review through the published support process.
 - Reports retain the reported message reference, reporter/reported account IDs, reason, optional details and review outcome for moderation.
 - Message text is not interpreted as HTML and external links are not rendered as clickable links.
