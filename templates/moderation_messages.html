@@ -6,6 +6,7 @@
     <div><p class="eyebrow">TRUST & SAFETY</p><h1>Message reports</h1><p class="muted">Review reported messages and apply proportionate decisions.</p></div>
   </div>
   <div class="workspace-card workspace-card-wide">
+    <p><a href="{{ url_for('moderation_messaging_appeals') }}">Review messaging restriction appeals</a></p>
     {% for report in reports %}
       <article class="message-item">
         <p><strong>Report #{{ report.id }}</strong> · {{ report.status|replace('_', ' ')|title }} · {{ report.created_at }}</p>

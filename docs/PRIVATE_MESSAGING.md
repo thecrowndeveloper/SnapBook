@@ -11,7 +11,7 @@
 - A notification is created for the other booking participant after a successful send.
 - Participants can report another participant's message for contact exchange, harassment, suspicious payment requests, inappropriate content or another concern. A reporter can submit one report per message.
 - A moderator queue is restricted to account IDs explicitly configured in `ONECRE8_MODERATOR_USER_IDS` or exact, verified account email addresses explicitly configured in `ONECRE8_MODERATOR_EMAILS` (comma-separated). Email matching trims whitespace and ignores case; email-based access requires a non-empty `email_verified_at` timestamp; no account is granted moderation access by default.
-- Moderators can mark a report under review, dismiss it with a note, or apply a temporary 24-hour, 72-hour or 7-day messaging restriction. Restricted users can still read conversations and may request a review through the published support process.
+- Moderators can mark a report under review, dismiss it with a note, or apply a temporary 24-hour, 72-hour or 7-day messaging restriction. Restricted users can still read conversations and submit one in-app appeal for each restriction while it remains active. Moderators can mark an appeal under review, uphold the restriction or lift it; decisions and notes are recorded with the reviewing account and timestamp. Appeal review is manual and no response-time guarantee is made.
 - Reports retain the reported message reference, reporter/reported account IDs, reason, optional details and review outcome for moderation.
 - Message text is not interpreted as HTML and external links are not rendered as clickable links.
 
@@ -30,11 +30,12 @@ This is a first-pass automated detector, not a guarantee that all contact exchan
 - No email address, phone number or other direct contact details are added to the conversation UI.
 - Policy events record user, booking, category and timestamp, not a duplicate copy of the rejected message.
 - Message reports are unique per reporter/message and can only be submitted by a booking participant about the other participant's message. Moderator routes return 404 for non-configured accounts.
+- Appeal submissions are linked to the exact restriction and authenticated account, are unique per restriction, and require 20–1,000 characters. Only configured moderators can review them. Lifting an appeal disables that restriction; upholding it leaves the restriction unchanged. Appeals are accepted only while the restriction is active and unexpired.
 - Temporary messaging restrictions have explicit expiry timestamps and are enforced server-side before message submission; reading existing conversations remains available.
 
 ## Not yet included
 
-Documents and video attachments, malware scanning, OCR/content extraction, read receipts, a full appeal workflow, retention and deletion workflows, and a complete end-to-end browser/screen-reader audit are not included in this foundation.
+Documents and video attachments, malware scanning, OCR/content extraction, read receipts, automated appeal handling, retention and deletion workflows, and a complete end-to-end browser/screen-reader audit are not included in this foundation.
 
 ## Accessibility and quality
 
