@@ -25,3 +25,6 @@ jobs:
         run: python -m py_compile app.py
       - name: Validate Jinja templates
         run: python -c "from pathlib import Path; from jinja2 import Environment; [Environment().parse(p.read_text()) for p in Path('templates').glob('*.html')]; print('All Jinja templates parse successfully')"
+
+      - name: Run application regression tests
+        run: python -m unittest discover -s tests -v
