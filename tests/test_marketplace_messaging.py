@@ -307,6 +307,8 @@ class MarketplaceMessagingTests(unittest.TestCase):
         conversation = provider.get(f"/messages/{self.booking_id}")
         self.assertEqual(conversation.status_code, 200)
         self.assertIn(b"Submit review request", conversation.data)
+        self.assertNotIn(b'class="message-compose"', conversation.data)
+        self.assertIn(b"messaging is unavailable while your restriction is active", conversation.data.lower())
 
         outsider = self.logged_in(self.outsider_id)
         denied = outsider.post(
