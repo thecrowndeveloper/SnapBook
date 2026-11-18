@@ -471,8 +471,9 @@ def init_db():
         """)
 
         # Marketplace service bookings and enquiries.
-        # Payment and review fields will be added only after gateway verification
-        # and a confirmed completion workflow are implemented.
+        # Fixed-price bookings snapshot the agreed price so later listing edits
+        # cannot change what a client is asked to pay. Payment attempts are
+        # recorded separately in the marketplace_payments ledger.
         con.execute("""
             CREATE TABLE IF NOT EXISTS marketplace_bookings (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -481,6 +482,7 @@ def init_db():
                 client_user_id INTEGER NOT NULL,
                 requested_date TEXT NOT NULL,
                 client_message TEXT DEFAULT '',
+                agreed_price REAL,
                 status TEXT NOT NULL DEFAULT 'Requested'
                     CHECK(status IN (
                         'Requested', 'Accepted', 'In Progress',
@@ -495,10 +497,34 @@ def init_db():
             )
         """)
 
+        add_column_if_missing(con, "marketplace_bookings", "agreed_price", "REAL")
+
         con.execute("""
             CREATE INDEX IF NOT EXISTS idx_marketplace_bookings_client
             ON marketplace_bookings(client_user_id)
         """)
+
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS marketplace_payments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                booking_id INTEGER NOT NULL,
+                client_user_id INTEGER NOT NULL,
+                reference TEXT NOT NULL UNIQUE,
+                amount_kobo INTEGER NOT NULL CHECK(amount_kobo > 0),
+                currency TEXT NOT NULL CHECK(currency = 'NGN'),
+                status TEXT NOT NULL CHECK(status IN ('pending', 'success', 'failed')),
+                paystack_transaction_id TEXT UNIQUE,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                paid_at TEXT,
+                FOREIGN KEY(booking_id) REFERENCES marketplace_bookings(id),
+                FOREIGN KEY(client_user_id) REFERENCES users(id)
+            )
+        """)
+        con.execute("""
+            CREATE INDEX IF NOT EXISTS idx_marketplace_payments_booking
+            ON marketplace_payments(booking_id, created_at DESC)
+        """)
+
         con.execute("""
             CREATE INDEX IF NOT EXISTS idx_marketplace_bookings_provider
             ON marketplace_bookings(provider_id)
@@ -1735,7 +1761,11 @@ def my_bookings():
                 providers.display_name AS professional_name,
                 providers.business_name,
                 services.title AS service_title,
-                marketplace_reviews.id AS review_id
+                marketplace_bookings.agreed_price AS service_price,
+                services.pricing_mode,
+                services.booking_mode,
+                marketplace_reviews.id AS review_id,
+                latest_payment.status AS payment_status
             FROM marketplace_bookings
             JOIN providers
               ON providers.id = marketplace_bookings.provider_id
@@ -1743,6 +1773,15 @@ def my_bookings():
               ON services.id = marketplace_bookings.service_id
             LEFT JOIN marketplace_reviews
               ON marketplace_reviews.booking_id = marketplace_bookings.id
+            LEFT JOIN (
+                SELECT booking_id, status,
+                       ROW_NUMBER() OVER (
+                           PARTITION BY booking_id ORDER BY id DESC
+                       ) AS payment_rank
+                FROM marketplace_payments
+            ) AS latest_payment
+              ON latest_payment.booking_id = marketplace_bookings.id
+             AND latest_payment.payment_rank = 1
             WHERE marketplace_bookings.client_user_id = ?
             ORDER BY marketplace_bookings.created_at DESC
         """, (current_user.id,)).fetchall()
@@ -1750,7 +1789,8 @@ def my_bookings():
     return render_template(
         "client_dashboard.html",
         bookings=bookings,
-        marketplace_bookings=marketplace_bookings
+        marketplace_bookings=marketplace_bookings,
+        payments_sandbox_enabled=bool(_test_secret_key())
     )
 
 
@@ -1983,6 +2023,7 @@ def request_service(service_id):
         con.execute("BEGIN IMMEDIATE")
         service = con.execute("""
             SELECT services.id, services.provider_id, services.booking_mode,
+                   services.pricing_mode, services.price,
                    providers.user_id, services.title
             FROM services
             JOIN providers ON providers.id = services.provider_id
@@ -2016,12 +2057,13 @@ def request_service(service_id):
         booking = con.execute("""
             INSERT INTO marketplace_bookings (
                 service_id, provider_id, client_user_id,
-                requested_date, client_message
+                requested_date, client_message, agreed_price
             )
-            VALUES (?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?)
         """, (
             service_id, service["provider_id"], current_user.id,
-            requested_date, client_message
+            requested_date, client_message,
+            service["price"] if service["pricing_mode"] == "fixed" else None
         ))
 
         if service["user_id"]:
@@ -2408,12 +2450,22 @@ def provider_dashboard():
                 marketplace_bookings.*,
                 users.name AS client_name,
                 users.email AS client_email,
-                services.title AS service_title
+                services.title AS service_title,
+                latest_payment.status AS payment_status
             FROM marketplace_bookings
             JOIN users
               ON users.id = marketplace_bookings.client_user_id
             JOIN services
               ON services.id = marketplace_bookings.service_id
+            LEFT JOIN (
+                SELECT booking_id, status,
+                       ROW_NUMBER() OVER (
+                           PARTITION BY booking_id ORDER BY id DESC
+                       ) AS payment_rank
+                FROM marketplace_payments
+            ) AS latest_payment
+              ON latest_payment.booking_id = marketplace_bookings.id
+             AND latest_payment.payment_rank = 1
             WHERE marketplace_bookings.provider_id = ?
             ORDER BY marketplace_bookings.created_at DESC
         """, (provider["id"],)).fetchall()
@@ -2489,6 +2541,9 @@ def booking_status(booking_id):
 
 # Create tables and safely add missing columns when the app starts.
 init_db()
+
+from paystack_payments import create_payment_blueprint, _test_secret_key
+app.register_blueprint(create_payment_blueprint(connect, csrf))
 
 
 if __name__ == "__main__":

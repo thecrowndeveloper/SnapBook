@@ -18,6 +18,18 @@
                         {{ booking.business_name or booking.professional_name }}</p>
                     <p><strong>Preferred date:</strong> {{ booking.requested_date }}</p>
                     <p><strong>Status:</strong> {{ booking.status }}</p>
+                    {% if booking.payment_status == 'success' %}
+                        <p class="muted">Payment verified · Sandbox transaction</p>
+                    {% elif booking.payment_status == 'pending' %}
+                        <p class="muted">A sandbox payment attempt is pending verification.</p>
+                    {% elif payments_sandbox_enabled and booking.status == 'Accepted' and booking.pricing_mode == 'fixed' and booking.booking_mode == 'booking' and booking.service_price is not none %}
+                        <p><strong>Service price:</strong> ₦{{ "{:,.2f}".format(booking.service_price or 0) }}</p>
+                        <form method="POST" action="{{ url_for('payments.start_marketplace_payment', booking_id=booking.id) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-primary">Pay securely · Sandbox</button>
+                        </form>
+                        <p class="muted">Test mode only. No real money will be collected.</p>
+                    {% endif %}
                     {% if booking.status == 'Completed' and not booking.review_id %}
                         <form method="POST" action="{{ url_for('submit_marketplace_review', booking_id=booking.id) }}" class="booking-form">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
