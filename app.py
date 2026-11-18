@@ -1801,7 +1801,8 @@ def my_bookings():
     return render_template(
         "client_dashboard.html",
         bookings=bookings,
-        marketplace_bookings=marketplace_bookings
+        marketplace_bookings=marketplace_bookings,
+        payments_sandbox_enabled=bool(_test_secret_key())
     )
 
 
@@ -2543,7 +2544,7 @@ def booking_status(booking_id):
 # Create tables and safely add missing columns when the app starts.
 init_db()
 
-from paystack_payments import create_payment_blueprint
+from paystack_payments import create_payment_blueprint, _test_secret_key
 app.register_blueprint(create_payment_blueprint(connect, csrf))
 
 
