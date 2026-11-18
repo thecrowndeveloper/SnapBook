@@ -28,8 +28,8 @@ def _amount_to_kobo(value):
         amount = (Decimal(str(value)) * 100).quantize(Decimal("1"))
     except (InvalidOperation, TypeError, ValueError):
         raise ValueError("The service price is invalid.")
-    if amount <= 0:
-        raise ValueError("The service price must be greater than zero.")
+    if amount < 5000:
+        raise ValueError("Paystack sandbox checkout requires a minimum of ₦50.")
     return int(amount)
 
 
@@ -97,6 +97,7 @@ def create_payment_blueprint(connect):
             or verified.get("reference") != payment["reference"]
             or verified.get("amount") != payment["amount_kobo"]
             or verified.get("currency") != "NGN"
+            or verified.get("domain") != "test"
         ):
             return False
 
@@ -159,7 +160,14 @@ def create_payment_blueprint(connect):
             except ValueError:
                 abort(400, description="The service price is not valid for checkout.")
 
-            reference = "ocm_" + os.urandom(16).hex()
+            pending_payment = con.execute(
+                """SELECT id FROM marketplace_payments
+                   WHERE booking_id = ? AND status = 'pending' LIMIT 1""",
+                (booking_id,),
+            ).fetchone()
+            if pending_payment:
+                abort(409, description="A payment attempt is already pending for this booking.")
+            reference = "ocm-" + os.urandom(16).hex()
             con.execute(
                 """INSERT INTO marketplace_payments
                    (booking_id, client_user_id, reference, amount_kobo, currency, status)
