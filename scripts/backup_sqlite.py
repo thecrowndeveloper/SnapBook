@@ -9,6 +9,7 @@ off-site storage. This script does not upload to a cloud provider.
 from __future__ import annotations
 
 import argparse
+import os
 import sqlite3
 from pathlib import Path
 
@@ -21,13 +22,27 @@ def create_backup(source_path: str | Path, destination_path: str | Path) -> Path
         raise FileNotFoundError(f"Source database does not exist: {source}")
     if source == destination:
         raise ValueError("Backup destination must differ from the source database.")
-    if destination.exists():
-        raise FileExistsError(f"Refusing to overwrite an existing backup: {destination}")
 
     destination.parent.mkdir(parents=True, exist_ok=True)
 
+    # Create exclusively with owner-only permissions; this also prevents a
+    # race from silently overwriting a backup created by another process.
     try:
-        with sqlite3.connect(f"file:{source}?mode=ro", uri=True, timeout=30) as source_db:
+        file_descriptor = os.open(
+            destination,
+            os.O_CREAT | os.O_EXCL | os.O_WRONLY,
+            0o600,
+        )
+    except FileExistsError:
+        raise FileExistsError(
+            f"Refusing to overwrite an existing backup: {destination}"
+        ) from None
+    else:
+        os.close(file_descriptor)
+
+    try:
+        source_uri = source.as_uri() + "?mode=ro"
+        with sqlite3.connect(source_uri, uri=True, timeout=30) as source_db:
             with sqlite3.connect(destination, timeout=30) as backup_db:
                 source_db.backup(backup_db)
                 result = backup_db.execute("PRAGMA integrity_check").fetchone()[0]
