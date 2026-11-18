@@ -198,7 +198,7 @@ class MarketplaceMessagingTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         with connect() as con:
             message = con.execute(
-                "SELECT body, sender_user_id FROM marketplace_messages"
+                "SELECT body, sender_user_id FROM marketplace_messages ORDER BY id DESC LIMIT 1"
             ).fetchone()
             notice = con.execute(
                 """SELECT COUNT(*) FROM notifications
