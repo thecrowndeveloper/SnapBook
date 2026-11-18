@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Message reports · OneCre8 moderation{% endblock %}
+{% block content %}
+<section class="section dashboard">
+  <div class="workspace-hero">
+    <div><p class="eyebrow">TRUST & SAFETY</p><h1>Message reports</h1><p class="muted">Review reported messages and apply proportionate decisions.</p></div>
+  </div>
+  <div class="workspace-card workspace-card-wide">
+    {% for report in reports %}
+      <article class="message-item">
+        <p><strong>Report #{{ report.id }}</strong> · {{ report.status|replace('_', ' ')|title }} · {{ report.created_at }}</p>
+        <p><strong>Service:</strong> {{ report.service_title }}</p>
+        <p><strong>Reported account:</strong> {{ report.reported_name }} · <strong>Reported by:</strong> {{ report.reporter_name }}</p>
+        <p><strong>Reason:</strong> {{ report.reason|replace('_', ' ')|title }}</p>
+        <blockquote>{{ report.message_body }}</blockquote>
+        {% if report.details %}<p><strong>Report details:</strong> {{ report.details }}</p>{% endif %}
+        {% if report.moderator_note %}<p><strong>Previous moderator note:</strong> {{ report.moderator_note }}</p>{% endif %}
+        {% if report.status not in ('actioned', 'dismissed') %}
+          <form method="POST" action="{{ url_for('review_marketplace_message_report', report_id=report.id) }}" class="booking-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label for="moderator-note-{{ report.id }}">Decision note (optional, maximum 1,000 characters)</label>
+            <textarea id="moderator-note-{{ report.id }}" name="note" rows="2" maxlength="1000"></textarea>
+            <label for="moderator-action-{{ report.id }}">Action</label>
+            <select id="moderator-action-{{ report.id }}" name="action" required>
+              <option value="">Choose an action</option>
+              <option value="in_review">Mark as under review</option>
+              <option value="dismiss">Dismiss report</option>
+              <option value="restrict_24h">Restrict messaging for 24 hours</option>
+              <option value="restrict_72h">Restrict messaging for 72 hours</option>
+              <option value="restrict_7d">Restrict messaging for 7 days</option>
+            </select>
+            <button class="btn btn-primary" type="submit">Save moderation decision</button>
+          </form>
+        {% endif %}
+      </article>
+    {% else %}
+      <p class="muted">There are no message reports to review.</p>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

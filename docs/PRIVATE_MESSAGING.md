@@ -9,6 +9,10 @@
 - Attachments are downloaded only through an authenticated route that checks booking participation; responses use attachment disposition and no-cache behavior.
 - Contact and off-platform payment screening runs on the server before a message is inserted. Blocked attempts are not delivered; a policy event category is recorded for future moderation.
 - A notification is created for the other booking participant after a successful send.
+- Participants can report another participant's message for contact exchange, harassment, suspicious payment requests, inappropriate content or another concern. A reporter can submit one report per message.
+- A moderator queue is restricted to account IDs explicitly configured in `ONECRE8_MODERATOR_USER_IDS` (comma-separated numeric user IDs). No account is granted moderation access by default.
+- Moderators can mark a report under review, dismiss it with a note, or apply a temporary 24-hour, 72-hour or 7-day messaging restriction. Restricted users can still read conversations and may request a review through the published support process.
+- Reports retain the reported message reference, reporter/reported account IDs, reason, optional details and review outcome for moderation.
 - Message text is not interpreted as HTML and external links are not rendered as clickable links.
 
 ## Block-before-sending policy
@@ -25,6 +29,8 @@ This is a first-pass automated detector, not a guarantee that all contact exchan
 - Message content is rendered as escaped text.
 - No email address, phone number or other direct contact details are added to the conversation UI.
 - Policy events record user, booking, category and timestamp, not a duplicate copy of the rejected message.
+- Message reports are unique per reporter/message and can only be submitted by a booking participant about the other participant's message. Moderator routes return 404 for non-configured accounts.
+- Temporary messaging restrictions have explicit expiry timestamps and are enforced server-side before message submission; reading existing conversations remains available.
 
 ## Not yet included
 
