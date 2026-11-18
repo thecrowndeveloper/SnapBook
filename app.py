@@ -22,6 +22,8 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.utils import secure_filename
 from uuid import uuid4
 from mutagen.mp4 import MP4
+from PIL import Image, ImageOps
+import warnings
 
 AUTHLIB_IMPORT_ERROR = None
 try:
@@ -108,6 +110,31 @@ PORTFOLIO_UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
 
 app.config["PORTFOLIO_UPLOAD_FOLDER"] = str(PORTFOLIO_UPLOAD_FOLDER)
 app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024
+
+def save_optimized_image(uploaded_file, filename, max_dimension):
+    """Validate and resize an image before saving it as WebP."""
+    destination = PORTFOLIO_UPLOAD_FOLDER / filename
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", Image.DecompressionBombWarning)
+            uploaded_file.stream.seek(0)
+            with Image.open(uploaded_file.stream) as opened:
+                if opened.format not in {"JPEG", "PNG", "WEBP"}:
+                    raise ValueError("Please upload a valid JPG, PNG or WEBP image.")
+                if opened.width * opened.height > 30_000_000:
+                    raise ValueError("This image is too large to process. Please use a smaller image.")
+                image = ImageOps.exif_transpose(opened)
+                image.thumbnail((max_dimension, max_dimension), Image.Resampling.LANCZOS)
+                image = image.convert("RGBA" if "A" in image.getbands() else "RGB")
+                image.save(destination, "WEBP", quality=82, method=6)
+    except ValueError:
+        destination.unlink(missing_ok=True)
+        raise
+    except Exception as error:
+        destination.unlink(missing_ok=True)
+        raise ValueError("The image could not be processed. Please try another image.") from error
+    return destination
+
 
 DEFAULT_IMAGE = (
     "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=900"
@@ -1788,49 +1815,41 @@ def update_provider_profile():
     profile_picture = request.files.get("profile_picture")
     new_picture_path = None
 
-    if profile_picture and profile_picture.filename:
-        suffix = Path(secure_filename(profile_picture.filename)).suffix.lower()
-        if suffix not in {".jpg", ".jpeg", ".png", ".webp"}:
-            flash("Profile pictures must be JPG, PNG or WEBP.", "error")
-            return redirect(url_for("provider_dashboard"))
-        filename = "profile-" + uuid4().hex + suffix
-        new_picture_path = PORTFOLIO_UPLOAD_FOLDER / filename
-        profile_picture.save(new_picture_path)
-        with new_picture_path.open("rb") as image_file:
-            signature = image_file.read(12)
-        valid = (
-            (suffix in {".jpg", ".jpeg"} and signature.startswith(b"\xff\xd8\xff"))
-            or (suffix == ".png" and signature.startswith(b"\x89PNG\r\n\x1a\n"))
-            or (suffix == ".webp" and signature[:4] == b"RIFF" and signature[8:12] == b"WEBP")
-        )
-        if not valid:
-            new_picture_path.unlink(missing_ok=True)
-            flash("The selected profile picture is not a valid image.", "error")
-            return redirect(url_for("provider_dashboard"))
-        profile_image = "/profile-media/" + filename
-
     if not display_name or not city or not bio:
         flash("Your name, location and biography are required.", "error")
         return redirect(url_for("provider_dashboard"))
     if len(display_name) > 100 or len(business_name) > 120 or len(bio) > 1500 or len(city) > 100:
         flash("Please shorten one or more profile fields.", "error")
         return redirect(url_for("provider_dashboard"))
+    if profile_picture and profile_picture.filename:
+        suffix = Path(secure_filename(profile_picture.filename)).suffix.lower()
+        if suffix not in {".jpg", ".jpeg", ".png", ".webp"}:
+            flash("Profile pictures must be JPG, PNG or WEBP.", "error")
+            return redirect(url_for("provider_dashboard"))
+        filename = "profile-" + uuid4().hex + ".webp"
+        try:
+            new_picture_path = save_optimized_image(profile_picture, filename, 1200)
+        except ValueError as error:
+            flash(str(error), "error")
+            return redirect(url_for("provider_dashboard"))
+        profile_image = "/profile-media/" + filename
+
     if profile_image and not (profile_image.startswith("https://") or profile_image.startswith("/profile-media/")):
+        if new_picture_path:
+            new_picture_path.unlink(missing_ok=True)
         flash("Profile image must be a secure HTTPS image address.", "error")
         return redirect(url_for("provider_dashboard"))
-
     with connect() as con:
-        provider = con.execute(
-            "SELECT id, profile_image FROM providers WHERE user_id = ?", (current_user.id,)
-        ).fetchone()
+        provider = con.execute("SELECT id, profile_image FROM providers WHERE user_id = ?", (current_user.id,)).fetchone()
         if not provider:
+            if new_picture_path:
+                new_picture_path.unlink(missing_ok=True)
             abort(404)
         if not profile_image:
             profile_image = provider["profile_image"] or ""
         con.execute("""
             UPDATE providers
-            SET display_name = ?, business_name = ?, bio = ?,
-                city = ?, profile_image = ?
+            SET display_name = ?, business_name = ?, bio = ?, city = ?, profile_image = ?
             WHERE id = ?
         """, (display_name, business_name, bio, city, profile_image, provider["id"]))
         con.execute("UPDATE users SET name = ? WHERE id = ?", (display_name, current_user.id))
@@ -1973,108 +1992,67 @@ def marketplace_booking_status(booking_id):
 @login_required
 def upload_portfolio():
     role_required("provider")
-
     title = request.form.get("title", "").strip()
     description = request.form.get("description", "").strip()
     uploaded_file = request.files.get("media")
-
     if not title or len(title) > 150:
         flash("Please enter a title of no more than 150 characters.", "error")
         return redirect(url_for("provider_dashboard"))
-
     if len(description) > 1000:
         flash("Description must not exceed 1000 characters.", "error")
         return redirect(url_for("provider_dashboard"))
-
     if not uploaded_file or not uploaded_file.filename:
         flash("Please choose an image or MP4 video.", "error")
         return redirect(url_for("provider_dashboard"))
 
-    safe_original_name = secure_filename(uploaded_file.filename)
-    suffix = Path(safe_original_name).suffix.lower()
-
+    suffix = Path(secure_filename(uploaded_file.filename)).suffix.lower()
     image_extensions = {".jpg", ".jpeg", ".png", ".webp"}
-
     if suffix not in image_extensions | {".mp4"}:
         flash("Unsupported file. Use JPG, PNG, WEBP or MP4.", "error")
         return redirect(url_for("provider_dashboard"))
-
     with connect() as con:
-        provider = con.execute("""
-            SELECT id
-            FROM providers
-            WHERE user_id = ?
-        """, (current_user.id,)).fetchone()
-
+        provider = con.execute("SELECT id FROM providers WHERE user_id = ?", (current_user.id,)).fetchone()
     if not provider:
         abort(404)
 
-    filename = uuid4().hex + suffix
-    file_path = PORTFOLIO_UPLOAD_FOLDER / filename
-
-    uploaded_file.save(file_path)
-
-    try:
-        if suffix in image_extensions:
-            with file_path.open("rb") as media_file:
-                signature = media_file.read(12)
-
-            valid_image = (
-                (suffix in {".jpg", ".jpeg"}
-                 and signature.startswith(b"\xff\xd8\xff"))
-                or
-                (suffix == ".png"
-                 and signature.startswith(b"\x89PNG\r\n\x1a\n"))
-                or
-                (suffix == ".webp"
-                 and signature[:4] == b"RIFF"
-                 and signature[8:12] == b"WEBP")
-            )
-
-            if not valid_image:
-                raise ValueError("The uploaded image is invalid.")
-
-            media_type = "image"
-
-        else:
+    if suffix in image_extensions:
+        filename = uuid4().hex + ".webp"
+        media_type = "image"
+        try:
+            save_optimized_image(uploaded_file, filename, 2400)
+        except ValueError as error:
+            flash(str(error), "error")
+            return redirect(url_for("provider_dashboard"))
+    else:
+        filename = uuid4().hex + ".mp4"
+        file_path = PORTFOLIO_UPLOAD_FOLDER / filename
+        uploaded_file.save(file_path)
+        try:
             video = MP4(str(file_path))
-
             if not video.info or not video.info.length:
                 raise ValueError("Could not read the video duration.")
-
             if video.info.length > 120:
                 raise ValueError("Videos must not exceed 2 minutes.")
-
             media_type = "video"
+        except Exception as error:
+            file_path.unlink(missing_ok=True)
+            if isinstance(error, ValueError):
+                flash(str(error), "error")
+            else:
+                flash("The video could not be validated. Please try another file.", "error")
+            return redirect(url_for("provider_dashboard"))
 
+    try:
         with connect() as con:
             con.execute("""
                 INSERT INTO portfolio_items (
-                    provider_id,
-                    media_type,
-                    filename,
-                    title,
-                    description
-                )
-                VALUES (?, ?, ?, ?, ?)
-            """, (
-                provider["id"],
-                media_type,
-                filename,
-                title,
-                description
-            ))
-
-    except Exception as error:
-        file_path.unlink(missing_ok=True)
-
-        if isinstance(error, ValueError):
-            flash(str(error), "error")
-        else:
-            flash("The file could not be validated. Please try another file.", "error")
-
+                    provider_id, media_type, filename, title, description
+                ) VALUES (?, ?, ?, ?, ?)
+            """, (provider["id"], media_type, filename, title, description))
+    except Exception:
+        (PORTFOLIO_UPLOAD_FOLDER / filename).unlink(missing_ok=True)
+        flash("The portfolio item could not be saved. Please try again.", "error")
         return redirect(url_for("provider_dashboard"))
-
     flash("Portfolio item uploaded successfully.", "success")
     return redirect(url_for("provider_dashboard"))
 
@@ -2132,7 +2110,8 @@ def portfolio_media(filename):
 
     return send_from_directory(
         app.config["PORTFOLIO_UPLOAD_FOLDER"],
-        safe_filename
+        safe_filename,
+        max_age=31536000
     )
 
 
@@ -2149,7 +2128,7 @@ def profile_media(filename):
         ).fetchone()
     if not exists:
         abort(404)
-    return send_from_directory(app.config["PORTFOLIO_UPLOAD_FOLDER"], safe_filename)
+    return send_from_directory(app.config["PORTFOLIO_UPLOAD_FOLDER"], safe_filename, max_age=31536000)
 
 
 @app.route("/provider/<int:provider_id>")
