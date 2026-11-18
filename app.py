@@ -1904,6 +1904,9 @@ def request_service(service_id):
         return redirect(request.referrer or url_for("home"))
 
     with connect() as con:
+        # Serialize booking writers before checking for an existing active request.
+        # This closes the race where simultaneous requests both pass the check.
+        con.execute("BEGIN IMMEDIATE")
         service = con.execute("""
             SELECT services.id, services.provider_id, services.booking_mode,
                    providers.user_id, services.title
@@ -1971,6 +1974,8 @@ def marketplace_booking_status(booking_id):
     status = request.form.get("status", "")
 
     with connect() as con:
+        # Lock the booking while validating and applying its next status.
+        con.execute("BEGIN IMMEDIATE")
         booking = con.execute("""
             SELECT *
             FROM marketplace_bookings
@@ -2006,11 +2011,14 @@ def marketplace_booking_status(booking_id):
         else:
             abort(403)
 
-        con.execute("""
+        updated = con.execute("""
             UPDATE marketplace_bookings
             SET status = ?, updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?
-        """, (status, booking_id))
+            WHERE id = ? AND status = ?
+        """, (status, booking_id, booking["status"]))
+
+        if updated.rowcount != 1:
+            abort(409)
 
     flash("Booking status updated.", "success")
     if current_user.role == "provider":
