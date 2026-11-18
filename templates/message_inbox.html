@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Messages{% endblock %}
+{% block content %}
+<section class="section dashboard">
+  <div class="workspace-hero"><div><p class="eyebrow">ONECRE8 CONVERSATIONS</p><h1>Your messages</h1><p class="muted">Keep project discussions and arrangements on OneCre8.</p></div></div>
+  <div class="workspace-card workspace-card-wide">
+    {% for item in conversations %}
+      <article class="service-listing">
+        <h2>{{ item.service_title }}</h2>
+        <p><strong>{{ item.other_party }}</strong> · {{ item.status }}</p>
+        <p class="muted">{{ item.latest_message or 'Conversation started. Send the first message.' }}</p>
+        <a class="btn btn-primary" href="{{ url_for('booking_messages', booking_id=item.booking_id) }}">Open conversation</a>
+      </article>
+    {% else %}
+      <p class="muted">No conversations yet. Request a service to start a private conversation with a creative professional.</p>
+      <a class="btn btn-primary" href="{{ url_for('home') }}">Explore services</a>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
