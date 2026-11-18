@@ -38,6 +38,15 @@ class MarketplaceMessagingTests(unittest.TestCase):
                 "SELECT id FROM users WHERE email='message-outsider@example.test'"
             ).fetchone()["id"]
             con.execute(
+                """INSERT INTO users (name, email, password_hash, role, created_at)
+                   VALUES ('OneCre8 Moderator', 'message-moderator@example.test',
+                           'unused', 'client', CURRENT_TIMESTAMP)"""
+            )
+            cls.moderator_id = con.execute(
+                "SELECT id FROM users WHERE email='message-moderator@example.test'"
+            ).fetchone()["id"]
+            os.environ["ONECRE8_MODERATOR_USER_IDS"] = str(cls.moderator_id)
+            con.execute(
                 "INSERT INTO providers (user_id, display_name) VALUES (?, ?)",
                 (cls.provider_user_id, "Message Pro"),
             )
@@ -187,6 +196,69 @@ class MarketplaceMessagingTests(unittest.TestCase):
                 "SELECT COUNT(*) FROM marketplace_message_attachments"
             ).fetchone()[0]
         self.assertEqual(count, 0)
+
+
+    def test_participant_can_report_and_moderator_can_apply_temporary_restriction(self):
+        with connect() as con:
+            conversation_id = con.execute(
+                "SELECT id FROM marketplace_conversations WHERE booking_id=?",
+                (self.booking_id,),
+            ).fetchone()["id"]
+            cursor = con.execute(
+                """INSERT INTO marketplace_messages (conversation_id, sender_user_id, body)
+                   VALUES (?, ?, ?)""",
+                (conversation_id, self.provider_user_id, "Please contact me outside the platform."),
+            )
+            message_id = cursor.lastrowid
+
+        client = self.logged_in(self.client_id)
+        response = client.post(
+            f"/messages/{self.booking_id}/report/{message_id}",
+            data={"reason": "contact_exchange", "details": "Attempts to move the conversation off-platform."},
+            follow_redirects=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        with connect() as con:
+            report = con.execute(
+                "SELECT id, status FROM marketplace_message_reports WHERE message_id=?",
+                (message_id,),
+            ).fetchone()
+        self.assertEqual(report["status"], "open")
+
+        moderator = self.logged_in(self.moderator_id)
+        queue = moderator.get("/moderation/messages")
+        self.assertEqual(queue.status_code, 200)
+        self.assertIn(b"Message reports", queue.data)
+        decision = moderator.post(
+            f"/moderation/messages/{report['id']}",
+            data={"action": "restrict_24h", "note": "Reviewed report; temporary messaging restriction."},
+            follow_redirects=True,
+        )
+        self.assertEqual(decision.status_code, 200)
+        with connect() as con:
+            status = con.execute(
+                "SELECT status FROM marketplace_message_reports WHERE id=?",
+                (report["id"],),
+            ).fetchone()["status"]
+            restriction = con.execute(
+                "SELECT user_id, active FROM marketplace_messaging_restrictions WHERE report_id=?",
+                (report["id"],),
+            ).fetchone()
+        self.assertEqual(status, "actioned")
+        self.assertEqual(restriction["user_id"], self.provider_user_id)
+        self.assertEqual(restriction["active"], 1)
+
+        provider = self.logged_in(self.provider_user_id)
+        blocked = provider.post(
+            f"/messages/{self.booking_id}",
+            data={"body": "A new project message."},
+            follow_redirects=True,
+        )
+        self.assertIn(b"Messaging is temporarily restricted", blocked.data)
+
+    def test_non_moderator_cannot_open_moderation_queue(self):
+        outsider = self.logged_in(self.outsider_id)
+        self.assertEqual(outsider.get("/moderation/messages").status_code, 404)
 
     def test_valid_message_is_stored_and_notifies_other_participant(self):
         client = self.logged_in(self.client_id)
