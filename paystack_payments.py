@@ -91,6 +91,9 @@ def _valid_webhook_signature(raw_body, headers, secret_key):
 def create_payment_blueprint(connect, csrf_protect=None):
     payments = Blueprint("payments", __name__)
 
+    def exempt_webhook(view):
+        return csrf_protect.exempt(view) if csrf_protect is not None else view
+
     def verified_payment_matches(payment, verified):
         return (
             verified.get("reference") == payment["reference"]
@@ -279,6 +282,7 @@ def create_payment_blueprint(connect, csrf_protect=None):
         return redirect(url_for("my_bookings"))
 
     @payments.post("/payments/paystack/webhook")
+    @exempt_webhook
     def paystack_webhook():
         secret_key = _test_secret_key()
         if not secret_key:
@@ -312,8 +316,5 @@ def create_payment_blueprint(connect, csrf_protect=None):
 
         record_verified_success(payment, verified)
         return jsonify({"received": True}), 200
-
-    if csrf_protect is not None:
-        csrf_protect.exempt(payments.view_functions["paystack_webhook"])
 
     return payments
