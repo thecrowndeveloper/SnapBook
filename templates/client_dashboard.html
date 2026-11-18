@@ -16,7 +16,14 @@
                     <h3>{{ booking.service_title }}</h3>
                     <p><strong>Creative professional:</strong>
                         {{ booking.business_name or booking.professional_name }}</p>
-                    <p><strong>Preferred date:</strong> {{ booking.requested_date }}</p>
+                    {% if booking.request_type == 'enquiry' %}
+                        <p><strong>Request type:</strong> Service enquiry</p>
+                    {% else %}
+                        <p><strong>Preferred date:</strong> {{ booking.requested_date }}</p>
+                        {% if booking.requested_time %}<p><strong>Preferred time:</strong> {{ booking.requested_time }}</p>{% endif %}
+                        <p><strong>Sessions:</strong> {{ booking.session_count }} · {{ booking.duration_minutes }} minutes each · {{ booking.participants }} participant(s)</p>
+                        {% if booking.location %}<p><strong>Preferred location:</strong> {{ booking.location }}</p>{% endif %}
+                    {% endif %}
                     <p><strong>Status:</strong> {{ booking.status }}</p>
                     <a class="btn btn-primary" href="{{ url_for('booking_messages', booking_id=booking.id) }}">Open conversation</a>
                     {% if booking.payment_status == 'success' %}

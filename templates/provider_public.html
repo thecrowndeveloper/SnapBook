@@ -20,6 +20,14 @@
       </div>
     </div>
     {% if provider.bio %}<p class="public-profile-bio">{{ provider.bio }}</p>{% endif %}
+    <div class="public-profile-actions">
+      <a class="btn dark" href="#catalogue">Choose a service</a>
+      {% if current_user.is_authenticated and current_user.role == 'client' %}
+        <a class="btn btn-primary" href="{{ url_for('start_provider_conversation', provider_id=provider.id) }}">Message professional</a>
+      {% elif not current_user.is_authenticated %}
+        <a class="btn btn-primary" href="{{ url_for('login', next=url_for('start_provider_conversation', provider_id=provider.id)) }}">Message professional</a>
+      {% endif %}
+    </div>
     {% if categories %}
       <div class="public-specialties">
         {% for category in categories %}<span>{{ category.name }}</span>{% endfor %}
@@ -53,7 +61,7 @@
               {% else %}
                 <strong>Custom quote</strong>
               {% endif %}
-              <a class="public-service-link" href="{{ url_for('service_detail', service_id=service.id) }}">View service <span aria-hidden="true">→</span></a>
+              <a class="public-service-link" href="{{ url_for('service_detail', service_id=service.id) }}">{{ 'Book this service' if service.booking_mode == 'booking' else 'Request a quote' }} <span aria-hidden="true">→</span></a>
             </div>
           </article>
         {% endfor %}

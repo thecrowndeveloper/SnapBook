@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Message {{ provider.business_name or provider.display_name }}{% endblock %}
+{% block content %}
+<section class="section dashboard">
+  <div class="workspace-hero">
+    <div>
+      <p class="eyebrow">START A CONVERSATION</p>
+      <h1>Message {{ provider.business_name or provider.display_name }}</h1>
+      <p class="muted">Ask a question or discuss a project before making a booking. Keep contact and payment arrangements on OneCre8.</p>
+    </div>
+  </div>
+  <div class="workspace-card workspace-card-wide">
+    {% if services %}
+      <form method="POST" class="booking-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>What service would you like to discuss?
+          <select name="service_id" required>
+            <option value="">Choose a service</option>
+            {% for service in services %}
+              <option value="{{ service.id }}" {% if selected_service_id|string == service.id|string %}selected{% endif %}>{{ service.title }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>Your message
+          <textarea name="body" rows="6" maxlength="2000" required placeholder="Tell the professional about your project or ask a question...">{{ draft_message }}</textarea>
+        </label>
+        <p class="muted">Maximum 2,000 characters. Personal phone numbers, email addresses, external links and off-platform payment requests are blocked.</p>
+        <button class="btn dark" type="submit">Send message</button>
+      </form>
+    {% else %}
+      <p class="muted">This professional has not published an active service yet, so a conversation cannot be started from the marketplace at this time.</p>
+      <a class="btn btn-primary" href="{{ url_for('public_provider', provider_id=provider.id) }}">Return to profile</a>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
