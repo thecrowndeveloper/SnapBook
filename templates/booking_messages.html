@@ -9,6 +9,26 @@
         <article class="message-item {% if message.sender_user_id == current_user.id %}message-own{% endif %}">
           <p><strong>{{ message.sender_name }}</strong> <time datetime="{{ message.created_at }}">{{ message.created_at }}</time></p>
           <p>{{ message.body }}</p>
+          {% if message.sender_user_id != current_user.id %}
+            <details class="message-report">
+              <summary>Report this message</summary>
+              <form method="POST" action="{{ url_for('report_marketplace_message', booking_id=booking.id, message_id=message.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <label for="report-reason-{{ message.id }}">Reason</label>
+                <select id="report-reason-{{ message.id }}" name="reason" required>
+                  <option value="">Choose a reason</option>
+                  <option value="contact_exchange">Sharing contact details or moving off-platform</option>
+                  <option value="harassment">Harassment or abusive behaviour</option>
+                  <option value="scam_payment">Scam or suspicious payment request</option>
+                  <option value="inappropriate_content">Inappropriate content</option>
+                  <option value="other">Something else</option>
+                </select>
+                <label for="report-details-{{ message.id }}">Additional details (optional)</label>
+                <textarea id="report-details-{{ message.id }}" name="details" rows="2" maxlength="1000"></textarea>
+                <button class="btn dark" type="submit">Submit report</button>
+              </form>
+            </details>
+          {% endif %}
           {% if message.attachment_id %}<p><a href="{{ url_for('download_message_attachment', attachment_id=message.attachment_id) }}">Download attached image (WebP)</a></p>{% endif %}
         </article>
       {% else %}
