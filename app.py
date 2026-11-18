@@ -2348,7 +2348,7 @@ def service_detail(service_id):
         """, (service_id,)).fetchone()
     if not service:
         abort(404)
-    return render_template("service_detail.html", service=service)
+    return render_template("service_detail.html", service=service, now_date=datetime.now().strftime("%Y-%m-%d"))
 
 
 @app.route("/provider/profile/update", methods=["POST"])
@@ -2434,6 +2434,14 @@ def request_service(service_id):
     if len(client_message) > 2000 or len(location) > 250:
         flash("Please shorten your project details or location.", "error")
         return redirect(request.referrer or url_for("home"))
+    if requested_time:
+        try:
+            parsed_time = datetime.strptime(requested_time, "%H:%M").time()
+            if requested_date == datetime.now().strftime("%Y-%m-%d") and parsed_time <= datetime.now().time():
+                raise ValueError
+        except ValueError:
+            flash("Please choose a valid future start time.", "error")
+            return redirect(request.referrer or url_for("service_detail", service_id=service_id))
     if not 15 <= duration_minutes <= 1440 or not 1 <= session_count <= 20 or not 1 <= participants <= 100:
         flash("Choose a session duration between 15 minutes and 24 hours, 1–20 sessions and 1–100 participants.", "error")
         return redirect(request.referrer or url_for("home"))
