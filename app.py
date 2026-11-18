@@ -485,6 +485,27 @@ def init_db():
             ON marketplace_bookings(provider_id)
         """)
 
+        # Verified client reviews: one review per completed marketplace booking.
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS marketplace_reviews (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                booking_id INTEGER NOT NULL UNIQUE,
+                provider_id INTEGER NOT NULL,
+                client_user_id INTEGER NOT NULL,
+                rating INTEGER NOT NULL CHECK(rating BETWEEN 1 AND 5),
+                review_text TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(booking_id) REFERENCES marketplace_bookings(id)
+                    ON DELETE CASCADE,
+                FOREIGN KEY(provider_id) REFERENCES providers(id),
+                FOREIGN KEY(client_user_id) REFERENCES users(id)
+            )
+        """)
+        con.execute("""
+            CREATE INDEX IF NOT EXISTS idx_marketplace_reviews_provider_created
+            ON marketplace_reviews(provider_id, created_at DESC)
+        """)
+
         # Artwork for sale and costumes for rent
         con.execute("""
             CREATE TABLE IF NOT EXISTS products (
@@ -1694,12 +1715,15 @@ def my_bookings():
                 marketplace_bookings.*,
                 providers.display_name AS professional_name,
                 providers.business_name,
-                services.title AS service_title
+                services.title AS service_title,
+                marketplace_reviews.id AS review_id
             FROM marketplace_bookings
             JOIN providers
               ON providers.id = marketplace_bookings.provider_id
             JOIN services
               ON services.id = marketplace_bookings.service_id
+            LEFT JOIN marketplace_reviews
+              ON marketplace_reviews.booking_id = marketplace_bookings.id
             WHERE marketplace_bookings.client_user_id = ?
             ORDER BY marketplace_bookings.created_at DESC
         """, (current_user.id,)).fetchall()
@@ -2057,6 +2081,45 @@ def marketplace_booking_status(booking_id):
     return redirect(url_for("my_bookings"))
 
 
+@app.route("/marketplace-booking/<int:booking_id>/review", methods=["POST"])
+@login_required
+def submit_marketplace_review(booking_id):
+    role_required("client")
+    try:
+        rating = int(request.form.get("rating", "0"))
+    except (TypeError, ValueError):
+        abort(400)
+    review_text = request.form.get("review_text", "").strip()
+    if rating < 1 or rating > 5 or len(review_text) > 1000:
+        abort(400)
+
+    with connect() as con:
+        con.execute("BEGIN IMMEDIATE")
+        booking = con.execute("""
+            SELECT id, provider_id, client_user_id, status
+            FROM marketplace_bookings
+            WHERE id = ?
+        """, (booking_id,)).fetchone()
+        if not booking or booking["client_user_id"] != current_user.id:
+            abort(404)
+        if booking["status"] != "Completed":
+            abort(400)
+        existing = con.execute(
+            "SELECT id FROM marketplace_reviews WHERE booking_id = ?",
+            (booking_id,)
+        ).fetchone()
+        if existing:
+            abort(409)
+        con.execute("""
+            INSERT INTO marketplace_reviews
+                (booking_id, provider_id, client_user_id, rating, review_text)
+            VALUES (?, ?, ?, ?, ?)
+        """, (booking_id, booking["provider_id"], current_user.id, rating, review_text))
+
+    flash("Thank you. Your review has been published.", "success")
+    return redirect(url_for("my_bookings"))
+
+
 @app.route("/provider/portfolio/upload", methods=["POST"])
 @login_required
 def upload_portfolio():
@@ -2246,12 +2309,29 @@ def public_provider(provider_id):
             ORDER BY created_at DESC
         """, (provider_id,)).fetchall()
 
+        review_summary = con.execute("""
+            SELECT COUNT(*) AS review_count, ROUND(AVG(rating), 1) AS average_rating
+            FROM marketplace_reviews
+            WHERE provider_id = ?
+        """, (provider_id,)).fetchone()
+        provider_reviews = con.execute("""
+            SELECT marketplace_reviews.rating, marketplace_reviews.review_text,
+                   marketplace_reviews.created_at, users.name AS reviewer_name
+            FROM marketplace_reviews
+            JOIN users ON users.id = marketplace_reviews.client_user_id
+            WHERE marketplace_reviews.provider_id = ?
+            ORDER BY marketplace_reviews.created_at DESC
+            LIMIT 20
+        """, (provider_id,)).fetchall()
+
     return render_template(
         "provider_public.html",
         provider=provider,
         categories=categories,
         services=services,
-        portfolio_items=portfolio_items
+        portfolio_items=portfolio_items,
+        review_summary=review_summary,
+        provider_reviews=provider_reviews
     )
 
 @app.route("/provider-dashboard")

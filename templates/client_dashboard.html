@@ -18,6 +18,27 @@
                         {{ booking.business_name or booking.professional_name }}</p>
                     <p><strong>Preferred date:</strong> {{ booking.requested_date }}</p>
                     <p><strong>Status:</strong> {{ booking.status }}</p>
+                    {% if booking.status == 'Completed' and not booking.review_id %}
+                        <form method="POST" action="{{ url_for('submit_marketplace_review', booking_id=booking.id) }}" class="booking-form">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <label>Rate this creative professional
+                                <select name="rating" required>
+                                    <option value="">Choose a rating</option>
+                                    <option value="5">5 stars — Excellent</option>
+                                    <option value="4">4 stars — Very good</option>
+                                    <option value="3">3 stars — Good</option>
+                                    <option value="2">2 stars — Fair</option>
+                                    <option value="1">1 star — Poor</option>
+                                </select>
+                            </label>
+                            <label>Review (optional)
+                                <textarea name="review_text" rows="3" maxlength="1000" placeholder="Share your experience"></textarea>
+                            </label>
+                            <button type="submit" class="btn btn-primary">Submit verified review</button>
+                        </form>
+                    {% elif booking.review_id %}
+                        <p class="muted">You have reviewed this completed booking.</p>
+                    {% endif %}
                     {% if booking.status == 'Awaiting Client Confirmation' %}
                         <form method="POST"
                               action="{{ url_for('marketplace_booking_status', booking_id=booking.id) }}">

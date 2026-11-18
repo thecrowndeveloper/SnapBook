@@ -28,6 +28,7 @@
     <nav class="public-profile-nav" aria-label="Profile sections">
       <a href="#catalogue">Services catalogue <span>{{ services|length }}</span></a>
       <a href="#portfolio">Portfolio <span>{{ portfolio_items|length }}</span></a>
+      <a href="#reviews">Reviews <span>{{ review_summary.review_count }}</span></a>
     </nav>
   </div>
 
@@ -90,6 +91,26 @@
       </div>
     {% else %}
       <div class="public-empty-state"><h3>Portfolio coming soon</h3><p>Portfolio examples will appear here when they are added.</p></div>
+    {% endif %}
+  </section>
+
+  <section class="public-content-section" id="reviews">
+    <div class="public-section-heading">
+      <div><p class="eyebrow">CLIENT FEEDBACK</p><h2>Reviews</h2></div>
+      <p class="muted">{% if review_summary.review_count %}{{ review_summary.average_rating }}/5 average · {{ review_summary.review_count }} verified review{{ '' if review_summary.review_count == 1 else 's' }}{% else %}No verified reviews yet{% endif %}</p>
+    </div>
+    {% if provider_reviews %}
+      <div class="public-service-grid">
+        {% for review in provider_reviews %}
+          <article class="public-service-card">
+            <div class="public-service-card-top"><strong>{{ review.reviewer_name }}</strong><span aria-label="{{ review.rating }} out of 5 stars">{{ '★' * review.rating }}{{ '☆' * (5 - review.rating) }}</span></div>
+            {% if review.review_text %}<p>{{ review.review_text }}</p>{% else %}<p class="muted">The client left a star rating without a written comment.</p>{% endif %}
+            <small class="muted">{{ review.created_at }}</small>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="public-empty-state"><p>Reviews from completed bookings will appear here.</p></div>
     {% endif %}
   </section>
 
