@@ -132,6 +132,12 @@ class PaystackSandboxTests(unittest.TestCase):
         self.assertEqual(response.status_code, 403)
 
     def test_checkout_initializes_server_calculated_ngn_amount(self):
+        # A later service-listing price edit must not alter an accepted booking's price.
+        with connect() as con:
+            con.execute(
+                "UPDATE services SET price = 99000 WHERE id = ?",
+                (self.service_id,),
+            )
         fake = Mock()
         fake.raise_for_status.return_value = None
         fake.json.return_value = {
