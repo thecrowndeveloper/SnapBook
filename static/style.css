@@ -3475,7 +3475,7 @@ textarea {
 .message-item { max-width: min(85%, 680px); padding: 14px 16px; border: 1px solid #ded8cd; border-radius: 14px; background: #faf8f3; overflow-wrap: anywhere; }
 .message-item p { margin: 5px 0; }
 .message-item time { color: #625d55; font-size: .875rem; }
-.message-own { justify-self: end; background: #f3ead9; border-color: #c6a66c; }
+.message-own { justify-self: end; background: #f5f5f4; border-color: #d6d6d2; }
 .message-compose textarea { width: 100%; }
 @media (max-width: 600px) { .message-item { max-width: 100%; } }
 
@@ -3516,3 +3516,13 @@ textarea {
   }
   .public-profile-actions .btn { width: 100%; }
 }
+
+
+/* Clear, visible service actions and neutral message bubbles */
+.service-detail-actions { display:flex; flex-wrap:wrap; gap:12px; margin:22px 0 8px; }
+.service-detail-actions .btn { min-height:48px; display:inline-flex; align-items:center; justify-content:center; }
+.service-detail-panel .service-action-heading { margin:0 0 8px; color:#29251f; font-size:1.45rem; }
+.service-detail-panel .service-action-intro { margin:0 0 16px; color:#625d55; line-height:1.6; }
+.service-detail-panel .booking-form { padding:0; background:transparent; }
+.service-account-note { padding:12px 14px; margin:12px 0; border-left:3px solid #77736b; background:#f4f3f0; color:#393832; line-height:1.6; }
+@media(max-width:600px){.service-detail-actions{display:grid;grid-template-columns:1fr}.service-detail-actions .btn{width:100%}}
