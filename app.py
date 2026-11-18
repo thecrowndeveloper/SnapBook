@@ -2526,7 +2526,7 @@ def booking_status(booking_id):
 init_db()
 
 from paystack_payments import create_payment_blueprint
-app.register_blueprint(create_payment_blueprint(connect))
+app.register_blueprint(create_payment_blueprint(connect, csrf))
 
 
 if __name__ == "__main__":
