@@ -92,3 +92,122 @@ class HomepageRegressionTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class BookingAuthorizationRegressionTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        from app import connect
+
+        cls.connect = connect
+        with connect() as con:
+            con.execute(
+                "INSERT INTO users (name, email, password_hash, role, created_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)",
+                ("Test Client One", "booking-client-one@example.test", "not-used", "client"),
+            )
+            cls.client_one_id = con.execute(
+                "SELECT id FROM users WHERE email = ?", ("booking-client-one@example.test",)
+            ).fetchone()["id"]
+            con.execute(
+                "INSERT INTO users (name, email, password_hash, role, created_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)",
+                ("Test Client Two", "booking-client-two@example.test", "not-used", "client"),
+            )
+            cls.client_two_id = con.execute(
+                "SELECT id FROM users WHERE email = ?", ("booking-client-two@example.test",)
+            ).fetchone()["id"]
+            con.execute(
+                "INSERT INTO users (name, email, password_hash, role, created_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)",
+                ("Test Professional One", "booking-provider-one@example.test", "not-used", "provider"),
+            )
+            cls.provider_user_one_id = con.execute(
+                "SELECT id FROM users WHERE email = ?", ("booking-provider-one@example.test",)
+            ).fetchone()["id"]
+            con.execute(
+                "INSERT INTO users (name, email, password_hash, role, created_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)",
+                ("Test Professional Two", "booking-provider-two@example.test", "not-used", "provider"),
+            )
+            cls.provider_user_two_id = con.execute(
+                "SELECT id FROM users WHERE email = ?", ("booking-provider-two@example.test",)
+            ).fetchone()["id"]
+            con.execute(
+                "INSERT INTO categories (name, slug) VALUES (?, ?)",
+                ("Booking Test Category", "booking-test-category"),
+            )
+            category_id = con.execute(
+                "SELECT id FROM categories WHERE slug = ?", ("booking-test-category",)
+            ).fetchone()["id"]
+            con.execute(
+                "INSERT INTO providers (user_id, display_name) VALUES (?, ?)",
+                (cls.provider_user_one_id, "Test Professional One"),
+            )
+            cls.provider_one_id = con.execute(
+                "SELECT id FROM providers WHERE user_id = ?", (cls.provider_user_one_id,)
+            ).fetchone()["id"]
+            con.execute(
+                "INSERT INTO providers (user_id, display_name) VALUES (?, ?)",
+                (cls.provider_user_two_id, "Test Professional Two"),
+            )
+            cls.provider_two_id = con.execute(
+                "SELECT id FROM providers WHERE user_id = ?", (cls.provider_user_two_id,)
+            ).fetchone()["id"]
+            con.execute(
+                """INSERT INTO services
+                   (provider_id, category_id, title, pricing_mode, booking_mode)
+                   VALUES (?, ?, ?, ?, ?)""",
+                (cls.provider_one_id, category_id, "Test Service", "fixed", "booking"),
+            )
+            cls.service_id = con.execute(
+                "SELECT id FROM services WHERE title = ?", ("Test Service",)
+            ).fetchone()["id"]
+
+    def create_booking(self, client_user_id=None, provider_id=None, status="Requested"):
+        with self.connect() as con:
+            cursor = con.execute(
+                """INSERT INTO marketplace_bookings
+                   (service_id, provider_id, client_user_id, requested_date, status)
+                   VALUES (?, ?, ?, ?, ?)""",
+                (
+                    self.service_id,
+                    provider_id or self.provider_one_id,
+                    client_user_id or self.client_one_id,
+                    "2030-01-15",
+                    status,
+                ),
+            )
+            return cursor.lastrowid
+
+    def post_as(self, user_id, booking_id, status):
+        from app import app
+
+        old_csrf = app.config.get("WTF_CSRF_ENABLED", True)
+        app.config["WTF_CSRF_ENABLED"] = False
+        try:
+            with app.test_client() as client:
+                with client.session_transaction() as session:
+                    session["_user_id"] = str(user_id)
+                    session["_fresh"] = True
+                return client.post(
+                    f"/marketplace-booking/{booking_id}/status",
+                    data={"status": status},
+                )
+        finally:
+            app.config["WTF_CSRF_ENABLED"] = old_csrf
+
+    def test_client_cannot_update_another_clients_booking(self):
+        booking_id = self.create_booking(client_user_id=self.client_one_id)
+        response = self.post_as(self.client_two_id, booking_id, "Completed")
+        self.assertEqual(response.status_code, 404)
+
+    def test_professional_cannot_update_another_professionals_booking(self):
+        booking_id = self.create_booking(provider_id=self.provider_one_id)
+        response = self.post_as(
+            self.provider_user_two_id, booking_id, "Accepted"
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_professional_cannot_skip_booking_status_steps(self):
+        booking_id = self.create_booking(status="Requested")
+        response = self.post_as(
+            self.provider_user_one_id, booking_id, "Completed"
+        )
+        self.assertEqual(response.status_code, 400)
