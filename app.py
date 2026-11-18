@@ -2337,16 +2337,21 @@ def booking_messages(booking_id):
                     flash(str(error), "error")
                     return redirect(url_for("booking_messages", booking_id=booking_id))
             message_body = body or "Shared an image."
-            message_cursor = con.execute("""
-                INSERT INTO marketplace_messages (conversation_id, sender_user_id, body)
-                VALUES (?, ?, ?)
-            """, (conversation_id, current_user.id, message_body))
-            if saved_image:
-                con.execute("""
-                    INSERT INTO marketplace_message_attachments
-                        (message_id, booking_id, filename, file_size)
-                    VALUES (?, ?, ?, ?)
-                """, (message_cursor.lastrowid, booking_id, saved_image[0], saved_image[1]))
+            try:
+                message_cursor = con.execute("""
+                    INSERT INTO marketplace_messages (conversation_id, sender_user_id, body)
+                    VALUES (?, ?, ?)
+                """, (conversation_id, current_user.id, message_body))
+                if saved_image:
+                    con.execute("""
+                        INSERT INTO marketplace_message_attachments
+                            (message_id, booking_id, filename, file_size)
+                        VALUES (?, ?, ?, ?)
+                    """, (message_cursor.lastrowid, booking_id, saved_image[0], saved_image[1]))
+            except Exception:
+                if saved_image:
+                    (MESSAGE_ATTACHMENT_FOLDER / saved_image[0]).unlink(missing_ok=True)
+                raise
             session.pop(f"message_draft_{booking_id}", None)
             con.execute("""
                 UPDATE marketplace_bookings
