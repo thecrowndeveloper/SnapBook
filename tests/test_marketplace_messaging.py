@@ -190,6 +190,12 @@ class MarketplaceMessagingTests(unittest.TestCase):
 
     def test_valid_message_is_stored_and_notifies_other_participant(self):
         client = self.logged_in(self.client_id)
+        with connect() as con:
+            previous_notices = con.execute(
+                """SELECT COUNT(*) FROM notifications
+                   WHERE user_id=? AND notification_type='marketplace_message'""",
+                (self.provider_user_id,),
+            ).fetchone()[0]
         response = client.post(
             f"/messages/{self.booking_id}",
             data={"body": "I would like 12 edited photos by 2026-12-01."},
@@ -207,7 +213,7 @@ class MarketplaceMessagingTests(unittest.TestCase):
             ).fetchone()[0]
         self.assertEqual(message["body"], "I would like 12 edited photos by 2026-12-01.")
         self.assertEqual(message["sender_user_id"], self.client_id)
-        self.assertEqual(notice, 1)
+        self.assertEqual(notice, previous_notices + 1)
 
 
 if __name__ == "__main__":
