@@ -1757,7 +1757,11 @@ def my_bookings():
                 providers.display_name AS professional_name,
                 providers.business_name,
                 services.title AS service_title,
-                marketplace_reviews.id AS review_id
+                services.price AS service_price,
+                services.pricing_mode,
+                services.booking_mode,
+                marketplace_reviews.id AS review_id,
+                latest_payment.status AS payment_status
             FROM marketplace_bookings
             JOIN providers
               ON providers.id = marketplace_bookings.provider_id
@@ -1765,6 +1769,15 @@ def my_bookings():
               ON services.id = marketplace_bookings.service_id
             LEFT JOIN marketplace_reviews
               ON marketplace_reviews.booking_id = marketplace_bookings.id
+            LEFT JOIN (
+                SELECT booking_id, status,
+                       ROW_NUMBER() OVER (
+                           PARTITION BY booking_id ORDER BY id DESC
+                       ) AS payment_rank
+                FROM marketplace_payments
+            ) AS latest_payment
+              ON latest_payment.booking_id = marketplace_bookings.id
+             AND latest_payment.payment_rank = 1
             WHERE marketplace_bookings.client_user_id = ?
             ORDER BY marketplace_bookings.created_at DESC
         """, (current_user.id,)).fetchall()
