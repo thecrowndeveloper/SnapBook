@@ -3468,3 +3468,13 @@ textarea {
 .legal-document {
   min-width: 0;
 }
+
+
+/* OneCre8 private messaging */
+.message-history { display: grid; gap: 14px; margin-bottom: 24px; }
+.message-item { max-width: min(85%, 680px); padding: 14px 16px; border: 1px solid #ded8cd; border-radius: 14px; background: #faf8f3; overflow-wrap: anywhere; }
+.message-item p { margin: 5px 0; }
+.message-item time { color: #625d55; font-size: .875rem; }
+.message-own { justify-self: end; background: #f3ead9; border-color: #c6a66c; }
+.message-compose textarea { width: 100%; }
+@media (max-width: 600px) { .message-item { max-width: 100%; } }
