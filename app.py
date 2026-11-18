@@ -8,6 +8,7 @@ import smtplib
 from email.message import EmailMessage
 from pathlib import Path
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 
 from flask import (
@@ -2252,15 +2253,18 @@ def start_provider_conversation(provider_id):
                 return redirect(url_for("start_provider_conversation", provider_id=provider_id))
 
             body = request.form.get("body", "").strip()
+            draft_key = f"provider_message_draft_{provider_id}"
             if not body or len(body) > 2000:
+                session[draft_key] = body
                 flash("Please write a message of up to 2,000 characters.", "error")
-                return redirect(url_for("start_provider_conversation", provider_id=provider_id))
+                return redirect(url_for("start_provider_conversation", provider_id=provider_id, service_id=service_id))
             if detect_message_contact_violation(body):
+                session[draft_key] = body
                 flash(
                     "Message not sent. Personal contact details, external links and off-platform payment arrangements are not allowed. Please edit your message and keep the conversation on OneCre8.",
                     "error",
                 )
-                return redirect(url_for("start_provider_conversation", provider_id=provider_id))
+                return redirect(url_for("start_provider_conversation", provider_id=provider_id, service_id=service_id))
 
             con.execute("BEGIN IMMEDIATE")
             service = con.execute("""
@@ -2320,6 +2324,7 @@ def start_provider_conversation(provider_id):
                     booking_id,
                 ))
 
+            session.pop(draft_key, None)
             flash("Your message has been sent. You can continue the conversation here.", "success")
             return redirect(url_for("booking_messages", booking_id=booking_id))
 
@@ -2330,6 +2335,7 @@ def start_provider_conversation(provider_id):
         provider=provider,
         services=services,
         selected_service_id=request.args.get("service_id", ""),
+        draft_message=session.get(f"provider_message_draft_{provider_id}", ""),
     )
 
 
@@ -2348,7 +2354,7 @@ def service_detail(service_id):
         """, (service_id,)).fetchone()
     if not service:
         abort(404)
-    return render_template("service_detail.html", service=service, now_date=datetime.now().strftime("%Y-%m-%d"))
+    return render_template("service_detail.html", service=service, now_date=datetime.now(ZoneInfo("Africa/Lagos")).strftime("%Y-%m-%d"))
 
 
 @app.route("/provider/profile/update", methods=["POST"])
@@ -2424,8 +2430,9 @@ def request_service(service_id):
 
     if requested_date:
         try:
+            lagos_now = datetime.now(ZoneInfo("Africa/Lagos"))
             selected_date = datetime.strptime(requested_date, "%Y-%m-%d").date()
-            if selected_date < datetime.now().date():
+            if selected_date < lagos_now.date():
                 raise ValueError
         except ValueError:
             flash("Please choose a valid date that is not in the past.", "error")
@@ -2437,7 +2444,8 @@ def request_service(service_id):
     if requested_time:
         try:
             parsed_time = datetime.strptime(requested_time, "%H:%M").time()
-            if requested_date == datetime.now().strftime("%Y-%m-%d") and parsed_time <= datetime.now().time():
+            lagos_now = datetime.now(ZoneInfo("Africa/Lagos"))
+            if requested_date == lagos_now.strftime("%Y-%m-%d") and parsed_time <= lagos_now.time().replace(tzinfo=None):
                 raise ValueError
         except ValueError:
             flash("Please choose a valid future start time.", "error")
