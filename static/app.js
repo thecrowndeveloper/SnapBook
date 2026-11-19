@@ -77,5 +77,32 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
   });
-});
 
+  // Keep carousel arrows in sync with the actual scroll position.
+  document.querySelectorAll(".showcase-track-wrap").forEach((wrap) => {
+    const track = wrap.querySelector("[data-showcase-track]");
+    const previous = wrap.querySelector(".showcase-prev");
+    const next = wrap.querySelector(".showcase-next");
+    if (!track || !previous || !next) return;
+    const updateArrows = () => {
+      const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth);
+      const atStart = track.scrollLeft <= 2;
+      const atEnd = track.scrollLeft >= maxScroll - 2;
+      previous.classList.toggle("is-hidden", atStart || maxScroll <= 2);
+      next.classList.toggle("is-hidden", atEnd || maxScroll <= 2);
+      previous.setAttribute("aria-hidden", String(atStart || maxScroll <= 2));
+      next.setAttribute("aria-hidden", String(atEnd || maxScroll <= 2));
+      previous.disabled = atStart || maxScroll <= 2;
+      next.disabled = atEnd || maxScroll <= 2;
+    };
+    track.addEventListener("scroll", updateArrows, { passive: true });
+    window.addEventListener("resize", updateArrows);
+    if ("ResizeObserver" in window) {
+      const observer = new ResizeObserver(updateArrows);
+      observer.observe(track);
+      observer.observe(wrap);
+    }
+    requestAnimationFrame(updateArrows);
+  });
+
+});
