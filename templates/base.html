@@ -29,7 +29,8 @@
                 {% if current_user.role == 'photographer' %}
             <a href="{{ url_for('dashboard') }}">My dashboard</a>
         {% elif current_user.role == 'provider' %}
-            <a href="{{ url_for('provider_dashboard') }}">Creative Professional dashboard</a>
+            <a href="{{ url_for('provider_dashboard') }}">Business dashboard</a>
+            <a href="{{ url_for('provider_profile') }}">Manage profile</a>
             <a class="nav-messages-link" href="{{ url_for('message_inbox') }}">Messages</a>
         {% else %}
             <a href="{{ url_for('my_bookings') }}">My bookings</a>
