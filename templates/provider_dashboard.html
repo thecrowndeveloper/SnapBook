@@ -41,7 +41,7 @@
           {% if booking.payment_status == 'success' %}<p class="muted">Payment verified · Sandbox transaction</p>{% endif %}
           {% set next_status = {'Requested':['Accepted','Cancelled'],'Accepted':['In Progress','Cancelled'],'In Progress':['Awaiting Client Confirmation']} %}
           {% if next_status.get(booking.status) %}
-            <form method="POST" action="{{ url_for('marketplace_booking_status', booking_id=booking.id) }}">
+            <form class="booking-status-actions" method="POST" action="{{ url_for('marketplace_booking_status', booking_id=booking.id) }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <label>Update booking status
                 <select name="status" aria-label="Update status for {{ booking.service_title }}">
@@ -69,7 +69,7 @@
         <p class="muted">No notifications yet.</p>
       {% endfor %}
       {% if unread_count %}
-        <form method="POST" action="{{ url_for('mark_notifications_read') }}">
+        <form class="notification-actions" method="POST" action="{{ url_for('mark_notifications_read') }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button class="mini-btn" type="submit">Mark all as read</button>
         </form>
