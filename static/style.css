@@ -3644,3 +3644,18 @@ textarea {
 .dashboard .booking-status-actions select{min-height:44px;width:100%;padding:8px 12px;border:1px solid #a87938;border-radius:7px;background:#fbf8f1;color:#211d17;font:inherit}
 .dashboard .notification-actions{margin-top:12px}
 @media(prefers-reduced-motion:reduce){.showcase-track{scroll-behavior:auto}.showcase-card:hover .showcase-image img{transform:none}}
+
+/* Consistent actions and search-field alignment across desktop and tablet. */
+.marketplace-search .search-field { align-items:flex-start; text-align:left; }
+.marketplace-search .search-field > span { display:block; width:100%; text-align:left; color:#654a27; }
+.marketplace-search .search-submit { align-self:stretch; display:inline-flex; align-items:center; }
+.status-form { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+.status-form select { min-height:44px; min-width:130px; padding:8px 12px; border:1px solid #a87938; border-radius:7px; background:#fbf8f1; color:#211d17; font:inherit; }
+.dashboard .notification-actions { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+.dashboard .notification-actions .mini-btn { min-width:150px; }
+@media(max-width:700px) {
+ .marketplace-search .search-field,.marketplace-search .search-field>span { align-items:center; text-align:center; }
+ .marketplace-search .search-field>span { text-align:center; }
+ .status-form { justify-content:center; }
+ .dashboard .notification-actions { justify-content:center; }
+}
