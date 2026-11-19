@@ -3527,3 +3527,80 @@ textarea {
 .service-detail-panel .booking-form { padding:0; background:transparent; }
 .service-account-note { padding:12px 14px; margin:12px 0; border-left:3px solid #77736b; background:#f4f3f0; color:#393832; line-height:1.6; }
 @media(max-width:600px){.service-detail-actions{display:grid;grid-template-columns:1fr}.service-detail-actions .btn{width:100%}}
+
+
+/* iOS-friendly account forms and legal agreement rows */
+.auth-section {
+  width: 100%;
+  min-width: 0;
+  padding-left: max(5%, env(safe-area-inset-left));
+  padding-right: max(5%, env(safe-area-inset-right));
+}
+.auth-card {
+  min-width: 0;
+  width: min(100%, 520px);
+  margin-inline: auto;
+}
+.auth-card .booking-form,
+.auth-card .legal-acceptance,
+.auth-card .legal-check {
+  min-width: 0;
+  max-width: 100%;
+}
+.auth-card .legal-acceptance {
+  padding: clamp(12px, 3.5vw, 18px);
+  overflow: hidden;
+}
+.auth-card .booking-form label.legal-check {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: start;
+  column-gap: 10px;
+  width: 100%;
+  min-width: 0;
+  text-align: left;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+.auth-card .booking-form label.legal-check input[type="checkbox"] {
+  width: 18px;
+  min-width: 18px;
+  height: 18px;
+  margin: 3px 0 0;
+  flex: none;
+}
+.auth-card .booking-form label.legal-check a {
+  display: inline;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+.auth-card .booking-form button,
+.auth-card .btn {
+  max-width: 100%;
+  white-space: normal;
+}
+@media (max-width: 600px) {
+  .auth-section {
+    padding-top: 28px;
+    padding-bottom: 40px;
+  }
+  .auth-card {
+    padding: 22px 16px;
+    border-radius: 12px;
+  }
+  .auth-card h1 {
+    font-size: clamp(1.8rem, 8vw, 2.25rem);
+    letter-spacing: -.04em;
+  }
+  .auth-card .booking-form {
+    padding: 18px 14px;
+    gap: 13px;
+  }
+  .auth-card .legal-acceptance {
+    margin: 16px 0;
+  }
+  .auth-card .booking-form label.legal-check {
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+}
