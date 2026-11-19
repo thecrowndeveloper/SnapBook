@@ -24,14 +24,17 @@
 <section class="search-band" id="discover">
   <form class="filters marketplace-search" method="get" role="search" aria-label="Search the OneCre8 marketplace">
     <label class="search-field location-field">
-      <span>LOCATION</span>
-      <input type="search" name="city" list="nigerian-cities" value="{{ city }}" placeholder="Anywhere in Nigeria" autocomplete="off">
-      <datalist id="nigerian-cities">
+      <span>STATE</span>
+      <select name="city" aria-label="Choose a state or territory">
+        <option value="" {% if not city %}selected{% endif %}>Anywhere in Nigeria</option>
         {% for state, capital in locations %}
-          <option value="{{ capital }}" label="{{ state }} State"></option>
+          <option value="{{ capital }}" {% if city|lower == capital|lower %}selected{% endif %}>{{ state }} — {{ capital }}</option>
         {% endfor %}
-        <option value="Abuja" label="Federal Capital Territory"></option>
-      </datalist>
+        <option value="Abuja" {% if city|lower == 'abuja' %}selected{% endif %}>Federal Capital Territory — Abuja</option>
+        {% if city and city|lower not in (locations|map(attribute=1)|map('lower')|list) and city|lower != 'abuja' %}
+          <option value="{{ city }}" selected>{{ city }} (current search)</option>
+        {% endif %}
+      </select>
     </label>
     <label class="search-field category-field">
       <span>CATEGORY</span>
