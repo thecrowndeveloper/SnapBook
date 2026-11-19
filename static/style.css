@@ -3659,3 +3659,18 @@ textarea {
  .status-form { justify-content:center; }
  .dashboard .notification-actions { justify-content:center; }
 }
+
+.marketplace-search .search-field select {
+  height:40px;
+  min-height:40px;
+  padding:6px 12px;
+  border:1px solid #b58a50;
+  border-radius:6px;
+  background:#fffdf8;
+  color:#211d17;
+  font:600 14px 'DM Sans',sans-serif;
+}
+.marketplace-search .search-field select option {
+  background:#fffdf8;
+  color:#211d17;
+}
