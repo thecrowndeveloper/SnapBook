@@ -27,7 +27,7 @@
 
             {% if unread_count %}
                 <form method="POST"
-                      action="{{ url_for('mark_notifications_read') }}">
+                      action="{{ url_for('mark_notifications_read') }}" class="notification-actions">
                     <input type="hidden" name="csrf_token"
                            value="{{ csrf_token() }}">
                     <button type="submit" class="mini-btn">
