@@ -5,7 +5,7 @@
   --white: #fff;
   --line: #e8e4dc;
   --gold: #d6a75f;
-  --gold-dark: #a87938;
+  --gold-dark: #805a2b;
   --sand: #eee9df;
 }
 
@@ -3603,4 +3603,74 @@ textarea {
     font-size: 1rem;
     line-height: 1.5;
   }
+}
+
+/* OneCre8 responsive polish: tablet navigation, aligned search controls and accessible card rails. */
+@media (min-width:701px) and (max-width:1100px) {
+ .topbar{padding-inline:4%;gap:22px}.topbar .logo img{display:block;width:min(210px,24vw);height:auto}
+ .topbar nav{justify-content:flex-end;flex-wrap:wrap;gap:10px 20px;font-size:13px}
+ .topbar nav a,.topbar nav .nav-link-button{white-space:nowrap}
+ .search-band{padding-inline:4%}.marketplace-search{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+ .marketplace-search .search-submit{grid-column:1/-1;width:100%}
+}
+@media(max-width:700px){
+ .topbar{min-height:68px!important;height:auto!important;padding:10px 5%!important;flex-direction:row!important;flex-wrap:nowrap!important;justify-content:space-between!important;align-items:center!important;gap:12px!important}
+ .topbar .logo{display:flex;align-items:center;flex:1 1 auto;min-width:0}
+ .topbar .logo img{display:block;width:min(205px,62vw);max-height:44px;height:auto;object-fit:contain}
+ .topbar .mobile-menu-toggle{flex:0 0 44px!important;margin:0!important}.topbar nav.primary-navigation{top:100%!important}
+ .marketplace-search{grid-template-columns:minmax(0,1fr);gap:12px}
+ .marketplace-search .search-field{min-height:68px;align-items:center;text-align:center;padding:10px 14px;border:1px solid #dfd2bd;border-radius:8px;background:#fbf8f1}
+ .marketplace-search .search-field>span{color:#654a27;font-size:11px;letter-spacing:1.4px}
+ .marketplace-search .search-field input,.marketplace-search .search-field select{min-height:40px;text-align:center;color:#211d17;font-size:16px}
+ .marketplace-search .search-field select{appearance:auto;border:1px solid #b58a50;border-radius:6px;background:#fffdf8;padding:6px 34px 6px 12px}
+ .marketplace-search .search-submit{width:100%;min-height:50px;justify-content:center;border:1px solid #171715;border-radius:7px;background:#171715;color:#fff}
+ .dashboard .workspace-hero{text-align:center;justify-content:center;align-items:center}.dashboard .workspace-hero>div{width:100%}
+ .dashboard .workspace-hero h1,.dashboard .workspace-hero p,.dashboard .workspace-card>h2{text-align:center}
+ .dashboard .workspace-card{text-align:center;padding:20px 16px}.dashboard .service-listing{text-align:center}
+ .dashboard .service-listing form.booking-status-actions{justify-content:center}
+ .dashboard .notification-actions{display:flex;justify-content:center}.dashboard .workspace-card .unread{text-align:center}
+ .showcase-track-wrap{padding-inline:38px}.showcase-track{grid-auto-columns:100%!important;gap:0!important}
+ .showcase-card{width:100%}
+ .showcase-arrow{display:grid!important;top:42%;width:34px;height:42px;border:1px solid #a87938;border-radius:8px;background:#171715;color:#fff;font-size:24px;box-shadow:0 3px 12px rgba(0,0,0,.14)}
+ .showcase-prev{left:0}.showcase-next{right:0}.showcase-arrow.is-hidden{display:none!important}
+}
+@media(max-width:380px){.topbar .logo img{width:min(178px,58vw)}.marketplace-search .search-field{padding-inline:10px}}
+.showcase-track{scroll-behavior:smooth}
+.showcase-arrow:focus-visible,.marketplace-search select:focus-visible,.marketplace-search input:focus-visible,.dashboard .mini-btn:focus-visible{outline:3px solid #805a2b;outline-offset:3px}
+.dashboard .mini-btn{min-height:44px;padding:10px 16px;border:1px solid #28231c;border-radius:7px;background:#28231c;color:#fff;font-size:14px;font-weight:700;line-height:1.25;cursor:pointer}
+.dashboard .mini-btn:hover{background:#805a2b;border-color:#805a2b;color:#fff}
+.dashboard .booking-status-actions{display:flex;flex-wrap:wrap;align-items:end;justify-content:flex-start;gap:10px;margin-top:14px}
+.dashboard .booking-status-actions label{display:flex;flex:1 1 220px;flex-direction:column;gap:6px;text-align:left}
+.dashboard .booking-status-actions select{min-height:44px;width:100%;padding:8px 12px;border:1px solid #a87938;border-radius:7px;background:#fbf8f1;color:#211d17;font:inherit}
+.dashboard .notification-actions{margin-top:12px}
+@media(prefers-reduced-motion:reduce){.showcase-track{scroll-behavior:auto}.showcase-card:hover .showcase-image img{transform:none}}
+
+/* Consistent actions and search-field alignment across desktop and tablet. */
+.marketplace-search .search-field { align-items:flex-start; text-align:left; }
+.marketplace-search .search-field > span { display:block; width:100%; text-align:left; color:#654a27; }
+.marketplace-search .search-submit { align-self:stretch; display:inline-flex; align-items:center; }
+.status-form { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+.status-form select { min-height:44px; min-width:130px; padding:8px 12px; border:1px solid #a87938; border-radius:7px; background:#fbf8f1; color:#211d17; font:inherit; }
+.dashboard .notification-actions { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+.dashboard .notification-actions .mini-btn { min-width:150px; }
+@media(max-width:700px) {
+ .marketplace-search .search-field,.marketplace-search .search-field>span { align-items:center; text-align:center; }
+ .marketplace-search .search-field>span { text-align:center; }
+ .status-form { justify-content:center; }
+ .dashboard .notification-actions { justify-content:center; }
+}
+
+.marketplace-search .search-field select {
+  height:40px;
+  min-height:40px;
+  padding:6px 12px;
+  border:1px solid #b58a50;
+  border-radius:6px;
+  background:#fffdf8;
+  color:#211d17;
+  font:600 14px 'DM Sans',sans-serif;
+}
+.marketplace-search .search-field select option {
+  background:#fffdf8;
+  color:#211d17;
 }
