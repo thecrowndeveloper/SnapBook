@@ -3549,25 +3549,38 @@ textarea {
 }
 .auth-card .legal-acceptance {
   padding: clamp(12px, 3.5vw, 18px);
-  overflow: hidden;
+  overflow: visible;
 }
 .auth-card .booking-form label.legal-check {
-  display: grid;
-  grid-template-columns: 20px minmax(0, 1fr);
-  align-items: start;
-  column-gap: 10px;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
   width: 100%;
   min-width: 0;
+  margin: 0;
   text-align: left;
+  line-height: 1.5;
   overflow-wrap: anywhere;
   word-break: normal;
 }
-.auth-card .booking-form label.legal-check input[type="checkbox"] {
-  width: 18px;
-  min-width: 18px;
-  height: 18px;
-  margin: 3px 0 0;
-  flex: none;
+.auth-card .booking-form label.legal-check > input[type="checkbox"] {
+  appearance: auto;
+  -webkit-appearance: checkbox;
+  accent-color: #805a2b;
+  display: block;
+  flex: 0 0 20px;
+  width: 20px;
+  min-width: 20px;
+  height: 20px;
+  margin: 2px 0 0;
+}
+.auth-card .booking-form label.legal-check > span {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: normal;
 }
 .auth-card .booking-form label.legal-check a {
   display: inline;
@@ -3673,4 +3686,28 @@ textarea {
 .marketplace-search .search-field select option {
   background:#fffdf8;
   color:#211d17;
+}
+
+/* iOS registration agreement rows: checkbox stays beside one wrapping text column. */
+@media (max-width: 600px) {
+  .auth-card .legal-acceptance { padding: 14px 12px; }
+  .auth-card .booking-form label.legal-check {
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    font-size:16px;
+    line-height:1.5;
+    text-align:left;
+  }
+  .auth-card .booking-form label.legal-check > input[type="checkbox"] {
+    flex:0 0 20px;
+    width:20px;
+    min-width:20px;
+    height:20px;
+    margin-top:2px;
+  }
+  .auth-card .booking-form label.legal-check > span {
+    flex:1 1 0;
+    min-width:0;
+  }
 }
