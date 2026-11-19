@@ -3269,6 +3269,7 @@ def public_provider(provider_id):
     )
 
 @app.route("/provider-dashboard")
+@app.route("/provider-activity")
 @login_required
 def provider_dashboard():
     role_required("provider")
@@ -3358,8 +3359,9 @@ def provider_dashboard():
         """, (current_user.id,)).fetchone()[0]
 
 
+        template = "provider_activity.html" if request.path == "/provider-activity" else "provider_dashboard.html"
         return render_template(
-                "provider_dashboard.html",
+                template,
                         provider=provider,
                 categories=categories,
                 service_categories=service_categories,
@@ -3384,6 +3386,8 @@ def mark_notifications_read():
     if current_user.role == "photographer":
         return redirect(url_for("dashboard"))
 
+    if current_user.role == "provider" and request.form.get("return_to") == "activity":
+        return redirect(url_for("provider_dashboard", _anchor="activity") if request.path == "/provider-dashboard" else "/provider-activity")
     return redirect(url_for("provider_dashboard"))
 @app.route("/booking/<int:booking_id>/status", methods=["POST"])
 @login_required
