@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Manage your creative profile | OneCre8 Media{% endblock %}
+{% block content %}
+<section class="section dashboard">
+  <div class="workspace-hero">
+    <div>
+      <p class="eyebrow">YOUR PUBLIC PRESENCE</p>
+      <h1>Manage your profile</h1>
+      <p class="muted">Keep your public profile, services and portfolio up to date.</p>
+    </div>
+    <div class="workspace-hero-actions">
+      <a class="btn dark" href="{{ url_for('provider_dashboard') }}">Back to business dashboard</a>
+      <a class="btn btn-primary" href="{{ url_for('public_provider', provider_id=provider.id) }}" target="_blank" rel="noopener">Preview public page ↗</a>
+    </div>
+  </div>
+
+  <div class="workspace-grid">
+    <section class="workspace-card workspace-card-wide">
+      <h2>Edit your public profile</h2>
+      <form method="POST" action="{{ url_for('update_provider_profile') }}" enctype="multipart/form-data" class="booking-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>Display name<input name="display_name" maxlength="100" value="{{ provider.display_name }}" required></label>
+        <label>Business name<input name="business_name" maxlength="120" value="{{ provider.business_name or '' }}" placeholder="Optional business name"></label>
+        <label>Location<input name="city" maxlength="100" value="{{ provider.city }}" required></label>
+        <label>Biography<textarea name="bio" rows="4" maxlength="1500" required>{{ provider.bio }}</textarea></label>
+        <label>Upload profile picture<input type="file" name="profile_picture" accept=".jpg,.jpeg,.png,.webp"></label>
+        <p class="muted">JPG, PNG or WEBP. Leave this empty to keep your current profile picture.</p>
+        <button class="btn dark" type="submit">Save profile changes</button>
+      </form>
+    </section>
+
+    <section class="workspace-card">
+      <h2>Your categories</h2>
+      {% for category in categories %}<span class="tag">{{ category.name }}</span> {% else %}<p class="muted">No categories selected.</p>{% endfor %}
+      <p class="muted">Your selected categories help clients discover your work.</p>
+    </section>
+
+    <section class="workspace-card workspace-card-wide">
+      <h2>Publish a service</h2>
+      {% if service_categories %}
+      <form method="POST" action="{{ url_for('create_service') }}" class="booking-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>Category<select name="category_id" required><option value="">Choose category</option>{% for category in service_categories %}<option value="{{ category.id }}">{{ category.name }}</option>{% endfor %}</select></label>
+        <label>Service title<input name="title" maxlength="150" required placeholder="e.g. Wedding photography"></label>
+        <label>Description<textarea name="description" rows="3" maxlength="2000"></textarea></label>
+        <div class="two"><label>Pricing<select name="pricing_mode" required><option value="fixed">Fixed price</option><option value="quote">Custom quote</option></select></label><label>Price in Naira<input type="number" name="price" min="1" step="1" placeholder="e.g. 75000"></label></div>
+        <label>Request method<select name="booking_mode" required><option value="booking">Booking request</option><option value="enquiry">Enquiry</option></select></label>
+        <button class="btn dark" type="submit">Publish service</button>
+      </form>
+      {% else %}<p class="muted">No service categories are available on your profile yet.</p>{% endif %}
+    </section>
+
+    <section class="workspace-card workspace-card-wide">
+      <h2>Manage your services</h2>
+      {% for service in services %}
+        <div class="service-listing">
+          <h3><a href="{{ url_for('service_detail', service_id=service.id) }}">{{ service.title }}</a></h3>
+          <p class="muted">{{ service.category_name }} · {% if service.pricing_mode == 'fixed' %}₦{{ "{:,.0f}".format(service.price or 0) }}{% else %}Custom quote{% endif %}</p>
+          <p>{{ service.description }}</p><span class="tag">{{ 'Published' if service.is_active else 'Paused' }}</span>
+        </div>
+      {% else %}<p class="muted">You have not published a service yet.</p>{% endfor %}
+    </section>
+
+    <section class="workspace-card workspace-card-wide">
+      <h2>Upload to your portfolio</h2>
+      <form method="POST" action="{{ url_for('upload_portfolio') }}" enctype="multipart/form-data" class="booking-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>Work title<input name="title" maxlength="150" required></label>
+        <label>Description<textarea name="description" rows="3" maxlength="1000"></textarea></label>
+        <label>Image or MP4 video<input type="file" name="media" accept=".jpg,.jpeg,.png,.webp,.mp4" required></label>
+        <p class="muted">JPG, PNG, WEBP or MP4. Videos must be no longer than 2 minutes.</p>
+        <button class="btn dark" type="submit">Upload portfolio item</button>
+      </form>
+      <div class="workspace-grid" style="margin-top:20px">
+        {% for item in portfolio_items %}
+          <article class="workspace-card">
+            <h3>{{ item.title }}</h3>
+            {% if item.media_type == 'image' %}
+              <img src="{{ url_for('portfolio_media', filename=item.filename) }}" alt="{{ item.title }}" loading="lazy" decoding="async" style="width:100%;max-height:280px;object-fit:cover">
+            {% else %}
+              <video controls preload="metadata" style="width:100%;max-height:280px"><source src="{{ url_for('portfolio_media', filename=item.filename) }}" type="video/mp4"></video>
+            {% endif %}
+            <p>{{ item.description }}</p>
+            <form method="POST" action="{{ url_for('delete_portfolio_item', item_id=item.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="mini-btn" type="submit">Delete item</button>
+            </form>
+          </article>
+        {% else %}<p class="muted">Your portfolio is waiting for its first project.</p>{% endfor %}
+      </div>
+    </section>
+  </div>
+</section>
+{% endblock %}

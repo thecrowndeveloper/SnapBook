@@ -3369,6 +3369,63 @@ def provider_dashboard():
                 notifications=notifications,
                 unread_count=unread_count
     )
+@app.route("/provider/profile")
+@login_required
+def provider_profile():
+    role_required("provider")
+
+    with connect() as con:
+        provider = con.execute(
+            "SELECT * FROM providers WHERE user_id = ?",
+            (current_user.id,)
+        ).fetchone()
+        if not provider:
+            abort(404)
+
+        categories = con.execute("""
+            SELECT categories.id, categories.name
+            FROM categories
+            JOIN provider_categories
+              ON categories.id = provider_categories.category_id
+            WHERE provider_categories.provider_id = ?
+            ORDER BY categories.name
+        """, (provider["id"],)).fetchall()
+
+        service_categories = con.execute("""
+            SELECT categories.id, categories.name
+            FROM categories
+            JOIN provider_categories
+              ON categories.id = provider_categories.category_id
+            WHERE provider_categories.provider_id = ?
+              AND categories.slug != 'costume-rentals'
+            ORDER BY categories.name
+        """, (provider["id"],)).fetchall()
+
+        services = con.execute("""
+            SELECT services.*, categories.name AS category_name
+            FROM services
+            JOIN categories ON services.category_id = categories.id
+            WHERE services.provider_id = ?
+            ORDER BY services.created_at DESC
+        """, (provider["id"],)).fetchall()
+
+        portfolio_items = con.execute("""
+            SELECT *
+            FROM portfolio_items
+            WHERE provider_id = ?
+            ORDER BY created_at DESC
+        """, (provider["id"],)).fetchall()
+
+    return render_template(
+        "provider_profile.html",
+        provider=provider,
+        categories=categories,
+        service_categories=service_categories,
+        services=services,
+        portfolio_items=portfolio_items,
+    )
+
+
 @app.route("/notifications/read", methods=["POST"])
 @login_required
 def mark_notifications_read():
