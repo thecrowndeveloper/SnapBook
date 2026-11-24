@@ -3053,6 +3053,9 @@ def submit_marketplace_review(booking_id):
     review_text = request.form.get("review_text", "").strip()
     if rating < 1 or rating > 5 or len(review_text) > 1000:
         abort(400)
+    if detect_message_contact_violation(review_text):
+        flash("Please keep reviews on OneCre8 free of personal contact details, external links and off-platform payment requests.", "error")
+        return redirect(url_for("my_bookings"))
 
     with connect() as con:
         con.execute("BEGIN IMMEDIATE")

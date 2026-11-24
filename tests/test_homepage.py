@@ -334,6 +334,14 @@ class BookingAuthorizationRegressionTests(unittest.TestCase):
                     (self.service_id, self.provider_two_id, self.client_one_id, "2030-01-15"),
                 )
 
+    def test_reviews_reject_contact_details(self):
+        booking_id = self.create_booking(client_user_id=self.client_one_id, status="Completed")
+        response = self.post_review_as(self.client_one_id, booking_id, "5", "Contact me on 08012345678")
+        self.assertEqual(response.status_code, 302)
+        with self.connect() as con:
+            review = con.execute("SELECT id FROM marketplace_reviews WHERE booking_id = ?", (booking_id,)).fetchone()
+        self.assertIsNone(review)
+
     def test_review_rating_must_be_between_one_and_five(self):
         booking_id = self.create_booking(
             client_user_id=self.client_one_id, status="Completed"
