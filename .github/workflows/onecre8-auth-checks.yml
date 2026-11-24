@@ -1,6 +1,13 @@
 name: OneCre8 account and legal checks
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "app.py"
+      - "requirements.txt"
+      - "templates/**"
+      - ".github/workflows/onecre8-auth-checks.yml"
   pull_request:
     branches: [main]
     paths:
