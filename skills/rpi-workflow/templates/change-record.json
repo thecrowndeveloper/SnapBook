@@ -1,0 +1,32 @@
+{
+  "workflow": "RPI",
+  "project": "",
+  "change_id": "",
+  "title": "",
+  "depth": "quick",
+  "status": "research",
+  "risk_level": "low",
+  "research": {
+    "findings": [],
+    "assumptions": [],
+    "unknowns": [],
+    "evidence": []
+  },
+  "plan": {
+    "scope": [],
+    "out_of_scope": [],
+    "acceptance_criteria": [],
+    "risks": [],
+    "test_strategy": [],
+    "rollback": "",
+    "approval": "not_required"
+  },
+  "implementation": {
+    "changed_files": [],
+    "tests": [],
+    "review": "",
+    "deployment": "not_requested",
+    "post_deploy_verification": []
+  },
+  "notes": ""
+}
