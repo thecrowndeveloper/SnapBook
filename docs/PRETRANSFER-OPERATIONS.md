@@ -54,3 +54,32 @@ The destination must not already exist. The script rejects path traversal, unexp
 - [ ] Production volume, secrets, domain and service configuration preserved
 - [ ] Production client and creative-professional journeys tested after deployment
 - [ ] Live payments remain disabled pending separate approval
+
+## Encrypted Cloudflare R2 offsite backup
+
+The R2 bucket must remain private. Use a bucket-scoped R2 API token with Object Read & Write for `onecre8-production-backups` only. Never commit credentials or encryption keys.
+
+Install updated requirements in a trusted machine/virtual environment. Set these environment variables (do not store them in Git):
+
+- `R2_ENDPOINT_URL`: `https://<account-id>.r2.cloudflarestorage.com`
+- `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`: bucket-restricted R2 credentials
+- `R2_BUCKET`: `onecre8-production-backups`
+- `ONECRE8_BACKUP_ENCRYPTION_KEY`: independent 32-byte AES key, 64 hexadecimal characters
+
+Generate an encryption key using `python scripts/r2_backup_restore.py generate-key`. Store it in an offline password manager or other secure location separate from the R2 credentials and bucket. Losing this key makes backups unrecoverable; do not rotate it without retaining the old key for existing archives.
+
+Back up only from a trusted host with access to the volume. Pause writes before full-volume archive creation:
+
+```bash
+python scripts/r2_backup_restore.py backup /data
+```
+The utility streams AES-256-GCM encryption, uploads to R2, and checks object size and metadata. It prints the object key and plaintext archive SHA-256. Verify the upload in the R2 dashboard. Do not upload an archive without encryption.
+
+Restore the latest object to a brand-new isolated directory (never production):
+
+```bash
+python scripts/r2_backup_restore.py restore ./onecre8-restore-drill
+```
+Specify `--object-key backups/<exact-object-name>` to select an archive. Restore downloads, authenticates/decrypts, checks the archive hash, and calls the safe restore utility which verifies ZIP and SQLite integrity.
+
+R2 credentials and encryption key are not required in Railway; do not add them to the production service unless a separately reviewed automated backup design explicitly needs them. Current procedure is manual from a trusted machine with volume access.
