@@ -3711,3 +3711,92 @@ textarea {
     min-width:0;
   }
 }
+
+
+/* FINAL SEARCH ALIGNMENT: keep labels, fields and action on one baseline at desktop/tablet. */
+.search-band .marketplace-search {
+  width: 100%;
+  box-sizing: border-box;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(190px, auto);
+  align-items: end;
+  gap: 0;
+}
+.search-band .marketplace-search .search-field {
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: stretch;
+  gap: 6px;
+  padding: 8px 16px;
+  text-align: left;
+}
+.search-band .marketplace-search .search-field > span {
+  display: block;
+  width: auto;
+  min-height: 18px;
+  margin: 0;
+  line-height: 18px;
+  text-align: left;
+}
+.search-band .marketplace-search .search-field select {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  height: 48px;
+  min-height: 48px;
+  margin: 0;
+  font-size: 15px;
+}
+.search-band .marketplace-search .search-submit {
+  box-sizing: border-box;
+  min-width: 190px;
+  min-height: 48px;
+  height: 48px;
+  margin: 0;
+  padding: 0 18px;
+  white-space: nowrap;
+  align-self: end;
+}
+@media (min-width: 701px) and (max-width: 1100px) {
+  .search-band .marketplace-search {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 12px;
+    padding: 12px;
+  }
+  .search-band .marketplace-search .search-field { padding: 8px 10px; }
+  .search-band .marketplace-search .search-submit {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-width: 0;
+  }
+}
+@media (max-width: 700px) {
+  .search-band .marketplace-search {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    padding: 12px;
+  }
+  .search-band .marketplace-search .search-field {
+    min-height: 0;
+    padding: 12px 14px;
+    align-items: stretch;
+    text-align: left;
+  }
+  .search-band .marketplace-search .search-field > span { text-align: left; }
+  .search-band .marketplace-search .search-field select {
+    height: 48px;
+    min-height: 48px;
+    text-align: left;
+  }
+  .search-band .marketplace-search .search-submit {
+    grid-column: auto;
+    width: 100%;
+    min-width: 0;
+    min-height: 52px;
+    height: 52px;
+    white-space: normal;
+  }
+}
