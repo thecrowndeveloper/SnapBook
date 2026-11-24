@@ -517,6 +517,33 @@ def init_db():
         add_column_if_missing(con, "marketplace_bookings", "location", "TEXT NOT NULL DEFAULT ''")
         add_column_if_missing(con, "marketplace_bookings", "participants", "INTEGER NOT NULL DEFAULT 1")
 
+        # Enforce that every booking references a service owned by the same
+        # creative professional, even if a future route bypasses validation.
+        con.execute("""
+            CREATE TRIGGER IF NOT EXISTS trg_booking_service_provider_insert
+            BEFORE INSERT ON marketplace_bookings
+            FOR EACH ROW
+            WHEN NOT EXISTS (
+                SELECT 1 FROM services
+                WHERE id = NEW.service_id AND provider_id = NEW.provider_id
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'booking provider must own selected service');
+            END
+        """)
+        con.execute("""
+            CREATE TRIGGER IF NOT EXISTS trg_booking_service_provider_update
+            BEFORE UPDATE OF service_id, provider_id ON marketplace_bookings
+            FOR EACH ROW
+            WHEN NOT EXISTS (
+                SELECT 1 FROM services
+                WHERE id = NEW.service_id AND provider_id = NEW.provider_id
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'booking provider must own selected service');
+            END
+        """)
+
 
         con.execute("""
             CREATE INDEX IF NOT EXISTS idx_marketplace_bookings_client

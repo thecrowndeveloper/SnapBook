@@ -320,6 +320,20 @@ class BookingAuthorizationRegressionTests(unittest.TestCase):
             ).fetchone()[0]
         self.assertEqual(reviews, 1)
 
+    def test_database_rejects_booking_service_owned_by_another_professional(self):
+        import sqlite3
+        from app import connect
+
+
+        with self.assertRaises(sqlite3.IntegrityError):
+            with connect() as con:
+                con.execute(
+                    """INSERT INTO marketplace_bookings
+                       (service_id, provider_id, client_user_id, requested_date)
+                       VALUES (?, ?, ?, ?)""",
+                    (self.service_id, self.provider_two_id, self.client_one_id, "2030-01-15"),
+                )
+
     def test_review_rating_must_be_between_one_and_five(self):
         booking_id = self.create_booking(
             client_user_id=self.client_one_id, status="Completed"
