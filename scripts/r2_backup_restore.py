@@ -98,7 +98,7 @@ def _decrypt(source: Path, destination: Path, key: bytes) -> str:
 def backup(volume: Path) -> str:
     key, client, bucket = _key(), _s3(), _env("R2_BUCKET")
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    object_key = f"backups/onecre8-volume-{stamp}.zip.enc"
+    object_key = f"backups/onecre8-volume-{stamp}-{secrets.token_hex(4)}.zip.enc"
     with tempfile.TemporaryDirectory(prefix="onecre8-r2-backup-") as folder:
         tmp = Path(folder)
         archive, encrypted = tmp / "volume.zip", tmp / "volume.zip.enc"
