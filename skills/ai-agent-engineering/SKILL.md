@@ -25,3 +25,7 @@ description: Govern AI-assisted research, coding, repository access, tool use, p
 - Never claim tests, visual verification, merge, deployment, backups, or recovery succeeded unless directly verified.
 - Report exact evidence, not merely intention. Distinguish code change, CI, merge, deploy, and live behavior.
 - Keep records sanitized. This skill is a control aid, not a guarantee against agent errors.
+## OneCre8 Design Preservation
+- Follow `docs/DESIGN-PRESERVATION.md`. The existing UI is the protected visual baseline; do not redesign or broadly restyle without explicit user approval.
+- Inspect the affected page/styles first. Fix reported UI defects with the smallest targeted change and retain established visual tokens, layout, spacing, cards, typography, navigation, and imagery.
+- Visual regression is part of acceptance; perform browser before/after comparison when available and report when it was not performed.

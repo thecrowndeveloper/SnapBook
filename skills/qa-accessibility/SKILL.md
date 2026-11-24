@@ -22,3 +22,7 @@ Define tests for normal, empty, loading, success, error, validation, permission,
 
 ## Gate
 Map acceptance criteria to test results. Explicitly label checks not run and visual/device testing not performed. A passing compile or unit test does not prove usability or accessibility.
+## OneCre8 Design Preservation
+- Follow `docs/DESIGN-PRESERVATION.md`. The existing UI is the protected visual baseline; do not redesign or broadly restyle without explicit user approval.
+- Inspect the affected page/styles first. Fix reported UI defects with the smallest targeted change and retain established visual tokens, layout, spacing, cards, typography, navigation, and imagery.
+- Visual regression is part of acceptance; perform browser before/after comparison when available and report when it was not performed.
