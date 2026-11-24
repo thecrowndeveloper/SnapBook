@@ -3,8 +3,9 @@ name: Python application checks
 on:
   pull_request:
     branches: [main]
+  workflow_dispatch:
   push:
-    branches: ['performance/optimize-portfolio-image-uploads']
+    branches: [main]
 
 permissions:
   contents: read
