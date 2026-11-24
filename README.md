@@ -45,7 +45,7 @@ Production SQLite data is stored on the Railway volume mounted at `/data`. Portf
 - `scripts/backup_volume.py` creates a ZIP containing the database and supported portfolio/message attachment media. Pause application writes while creating this full-volume archive.
 - `scripts/restore_volume.py` restores a ZIP into a **new destination directory only**, refuses to overwrite existing data, rejects unsafe archive paths and verifies SQLite integrity.
 
-See [docs/PRETRANSFER-OPERATIONS.md](docs/PRETRANSFER-OPERATIONS.md) for the operational procedure. Keep encrypted offsite copies under access control; the scripts do not upload or encrypt backups.
+See [docs/PRETRANSFER-OPERATIONS.md](docs/PRETRANSFER-OPERATIONS.md) for the operational procedure. `scripts/r2_backup_restore.py` encrypts full-volume archives with AES-256-GCM and uploads them to private Cloudflare R2, verifying object metadata on upload and the archive checksum/authentication during restore. This workflow requires R2 credentials and a separately protected encryption key, and must be run from a trusted host with access to the production volume; it does not run automatically from Railway. Keep encryption keys and R2 credentials out of GitHub.
 
 ## Production notes
 
