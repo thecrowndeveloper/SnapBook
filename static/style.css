@@ -3838,3 +3838,70 @@ textarea {
     min-height: 0;
   }
 }
+
+/* OneCre8 marketplace search: stable field alignment and responsive layout. */
+.search-band .marketplace-search {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(190px, 220px) !important;
+  align-items: stretch !important;
+  gap: 0 !important;
+}
+.search-band .marketplace-search .search-field {
+  box-sizing: border-box !important;
+  min-height: 68px !important;
+  height: 68px !important;
+  padding: 8px 16px !important;
+  justify-content: center !important;
+  align-items: stretch !important;
+  text-align: left !important;
+  border: 0 !important;
+}
+.search-band .marketplace-search .search-field + .search-field {
+  border-left: 1px solid #e8e4dc !important;
+}
+.search-band .marketplace-search .search-submit {
+  align-self: stretch !important;
+  height: 68px !important;
+  min-height: 68px !important;
+  margin: 0 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  white-space: normal !important;
+}
+@media (max-width: 900px) {
+  .search-band .marketplace-search {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    gap: 12px !important;
+    align-items: stretch !important;
+  }
+  .search-band .marketplace-search .search-field {
+    border: 1px solid #dfd2bd !important;
+    border-radius: 8px !important;
+  }
+  .search-band .marketplace-search .search-field + .search-field {
+    border-left: 1px solid #dfd2bd !important;
+  }
+  .search-band .marketplace-search .search-submit {
+    grid-column: 1 / -1 !important;
+    height: 50px !important;
+    min-height: 50px !important;
+  }
+}
+@media (max-width: 700px) {
+  .search-band .marketplace-search {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 10px !important;
+  }
+  .search-band .marketplace-search .search-field,
+  .search-band .marketplace-search .search-field + .search-field {
+    height: auto !important;
+    min-height: 68px !important;
+    border: 1px solid #dfd2bd !important;
+    border-radius: 8px !important;
+    padding: 10px 14px !important;
+  }
+  .search-band .marketplace-search .search-submit {
+    grid-column: auto !important;
+    height: 48px !important;
+    min-height: 48px !important;
+  }
+}
