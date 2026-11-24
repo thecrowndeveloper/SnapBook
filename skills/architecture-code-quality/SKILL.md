@@ -23,3 +23,7 @@ description: Research and implement maintainable application architecture, Pytho
 
 ## Gate
 Do not claim quality based on style alone. Test behavior and review the diff. Record unresolved debt rather than silently expanding scope.
+## OneCre8 Design Preservation
+- Follow `docs/DESIGN-PRESERVATION.md`. The existing UI is the protected visual baseline; do not redesign or broadly restyle without explicit user approval.
+- Inspect the affected page/styles first. Fix reported UI defects with the smallest targeted change and retain established visual tokens, layout, spacing, cards, typography, navigation, and imagery.
+- Visual regression is part of acceptance; perform browser before/after comparison when available and report when it was not performed.
