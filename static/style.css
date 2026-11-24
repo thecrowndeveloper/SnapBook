@@ -3809,3 +3809,32 @@ textarea {
 .search-band .marketplace-search .search-submit{align-self:end!important;height:40px!important;min-height:40px!important;width:100%!important;min-width:0!important;margin:0!important;padding:0 12px!important;border-radius:5px!important;white-space:nowrap!important;font-size:12px!important}
 @media(max-width:900px){.search-band .marketplace-search{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;align-items:end!important;gap:12px!important}.search-band .marketplace-search .search-submit{grid-column:1/-1!important}}
 @media(max-width:700px){.search-band{padding:22px 5%!important}.search-band .marketplace-search{grid-template-columns:minmax(0,1fr)!important;gap:10px!important;padding:12px!important}.search-band .marketplace-search .search-field{padding:0 2px!important}.search-band .marketplace-search .search-submit{grid-column:auto!important;height:48px!important;min-height:48px!important;white-space:normal!important}}
+
+/* Pre-transfer hero proportion refinement — preserve existing design and image. */
+.hero {
+  min-height: clamp(520px, 72svh, 700px);
+}
+.hero-photo-wrap {
+  min-height: clamp(420px, 58svh, 560px);
+}
+.hero-main {
+  min-height: clamp(420px, 58svh, 560px);
+}
+@media (max-width: 1050px) {
+  .hero {
+    min-height: clamp(480px, 68svh, 640px);
+  }
+  .hero-photo-wrap,
+  .hero-main {
+    min-height: clamp(360px, 52svh, 500px);
+  }
+}
+@media (max-width: 700px) {
+  .hero {
+    min-height: 0;
+  }
+  .hero-photo-wrap,
+  .hero-main {
+    min-height: 0;
+  }
+}
